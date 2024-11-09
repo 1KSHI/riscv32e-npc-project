@@ -17,7 +17,12 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "../../isa/riscv32/local-include/reg.h"
 #include "sdb.h"
+#include <memory/paddr.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static int is_batch_mode = false;
 
@@ -47,6 +52,46 @@ static int cmd_c(char *args) {
   return 0;
 }
 
+static int cmd_si(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    cpu_exec(1);
+  } else {
+    cpu_exec(atoi(arg));
+  }
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    printf("Unknown command 'info' without arguments\n");
+    return 0;
+  } else if (strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  } else {
+    printf("Unknown command 'info %s'\n", arg);
+  }
+  return 0;
+}
+
+
+static int cmd_x(char *args) {
+    char *arg = strtok(args, " ");
+    int N = atoi(arg);
+
+    arg = strtok(NULL, " ");
+    long unsigned int addr = (unsigned int)strtol(arg, NULL, 0);
+
+    static int i;
+    for(i=0;i<N;i++){
+    printf("%lx:%08x\n",addr,paddr_read(addr,4));
+    addr += 4;
+}
+
+    return 0;
+}
+
 
 static int cmd_q(char *args) {
   return -1;
@@ -62,6 +107,9 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Execute N instructions in a single step", cmd_si },
+  { "info", "Print the state of the program", cmd_info },
+  { "x", "Scan Memory", cmd_x },
 
   /* TODO: Add more commands */
 
