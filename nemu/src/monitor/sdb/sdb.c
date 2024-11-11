@@ -29,6 +29,8 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 
+
+
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -46,6 +48,9 @@ static char* rl_gets() {
 
   return line_read;
 }
+
+
+
 
 static int cmd_c(char *args) {
   cpu_exec(-1);
@@ -81,13 +86,34 @@ static int cmd_x(char *args) {
     int N = atoi(arg);
 
     arg = strtok(NULL, " ");
+    printf("arg:%s\n",arg);
     long unsigned int addr = (unsigned int)strtol(arg, NULL, 0);
-
+    printf("addr:%lx\n",addr);
     static int i;
     for(i=0;i<N;i++){
     printf("%lx:%08x\n",addr,paddr_read(addr,4));
     addr += 4;
 }
+
+    return 0;
+}
+
+
+static int cmd_e(char *args) {
+    char *arg = args;
+    if (arg == NULL) {
+        printf("Unknown command 'e' without arguments\n");
+        return 0;
+    } else {
+        bool success = true;
+        word_t result = expr(arg, &success);
+        if (success) {
+            printf("%d\n", result);
+        } else {
+            printf("Invalid expression\n");
+        }
+    }
+    
 
     return 0;
 }
@@ -110,6 +136,7 @@ static struct {
   { "si", "Execute N instructions in a single step", cmd_si },
   { "info", "Print the state of the program", cmd_info },
   { "x", "Scan Memory", cmd_x },
+  { "e", "Evaluate the value of an expression", cmd_e },
 
   /* TODO: Add more commands */
 
