@@ -21,7 +21,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,TK_DECIMAL,
+  TK_NOTYPE = 256, TK_HEX,TK_NEGATIVE,TK_DECIMAL,TK_EQ,TK_NEQ,TK_AND,TK_REG
 
   /* TODO: Add more token types */
 
@@ -37,6 +37,9 @@ static struct rule {
    */
 
   {" +", TK_NOTYPE},    // spaces
+  {"0x[0-9a-fA-F]+", TK_HEX}, // hexadecimal number
+  {"-[0-9]+", TK_NEGATIVE}, // decimal integer
+  {"[0-9]+", TK_DECIMAL}, // decimal integer
   {"\\+", '+'},         // plus
   {"-", '-'},           // minus
   {"\\*", '*'},         // multiply
@@ -44,7 +47,9 @@ static struct rule {
   {"\\(", '('},         // left parenthesis
   {"\\)", ')'},         // right parenthesis
   {"==", TK_EQ},        // equal
-  {"[0-9]+", TK_DECIMAL}, // decimal integer
+  {"!=", TK_NEQ},       // not equal
+  {"&&", TK_AND},       // and
+  {"\\$[a-zA-Z0-9]+", TK_REG}, // register name
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -97,22 +102,37 @@ static int eval(int p, int q) {
       个人的解决方法是补0
       当为“+”或“-”的左侧没有数字时，补0，当为“*”或“/”的左侧没有数字时，报错
       当为“+”或“-”的右侧没有数字时，报错，当为“*”或“/”的右侧没有数字时，报错
-      暂时没想到其他的情况*/
-      if((tokens[p].type=='+'||tokens[p].type=='-')&&(tokens[q].type=='(')){
-        return 0;
-      }
-      else {
-        printf("Bad expression in p(%d) and q(%d), Both sides of the symbol are not full numbers\n", p, q);
-        assert(0);
-      }
+      暂时没想到其他的情况
+    */
+    if((tokens[p].type=='+'||tokens[p].type=='-')&&(tokens[q].type=='(')){
+      return 0;
+    }
+    else {
+      printf("Bad expression in p(%d) and q(%d), Both sides of the symbol are not full numbers\n", p, q);
+      assert(0);
+    }
   }
   else if (p == q) {
     /* Single token.
      * For now this token should be a number.
      * Return the value of the number.
      */
-    if (tokens[p].type == TK_DECIMAL) {
+    if (tokens[p].type == TK_DECIMAL || tokens[p].type == TK_NEGATIVE) {
       return atoi(tokens[p].str);
+    }
+    else if (tokens[p].type == TK_HEX) {
+      return strtol(tokens[p].str, NULL, 16);
+    }
+    else if (tokens[p].type == TK_REG) {
+      bool success = true;
+      word_t result = isa_reg_str2val(tokens[p].str+1, &success);
+      if (success) {
+        return result;
+      }
+      else {
+        printf("Bad expression: register name not found\n");
+        return 0;
+      }
     }
     else {
       /* Bad expression */
@@ -129,17 +149,22 @@ static int eval(int p, int q) {
   else {
     int parenthesis_flag = 0;
     bool sum_sub_flag = false;
+    bool sign_flag = false;
     int op = -1; // the position of 主运算符 in the token expression
     for (int i = p; i <= q; i++) {
       if (tokens[i].type == '(') parenthesis_flag++;
       if (tokens[i].type == ')') parenthesis_flag--;
 
       if (parenthesis_flag == 0) {
-        if (tokens[i].type == '+' || tokens[i].type == '-') {
+        if(tokens[i].type == TK_EQ || tokens[i].type == TK_AND || tokens[i].type == TK_NEQ){
+          op = i;
+          sign_flag = true;
+        }
+        else if (!sign_flag && (tokens[i].type == '+' || tokens[i].type == '-')) {
           op = i;
           sum_sub_flag = true;
         }
-        else if (!sum_sub_flag && (tokens[i].type == '*' || tokens[i].type == '/')) {
+        else if (!sign_flag && !sum_sub_flag && (tokens[i].type == '*' || tokens[i].type == '/')) {
           op = i;
         }
       }
@@ -160,6 +185,9 @@ static int eval(int p, int q) {
       case '-': return val1 - val2;
       case '*': return val1 * val2;
       case '/': return val1 / val2;
+      case TK_EQ: return val1 == val2;
+      case TK_NEQ: return val1 != val2;
+      case TK_AND: return val1 && val2;
       default: assert(0);
     }
   }
@@ -170,7 +198,7 @@ static bool make_token(char *e) {
   int position = 0;
   int i;
   regmatch_t pmatch;
-  bool negative_flag = false;
+  //bool negative_flag = false;
   nr_token = 0;
 
   while (e[position] != '\0') {
@@ -192,43 +220,58 @@ static bool make_token(char *e) {
 
         switch (rules[i].token_type) {
           case TK_NOTYPE:break;
-          //这种处理负数的方法并没有把负数当作一个整体，只是在负号前加上了一个括号，更优解法在思考中
-          case '-':
-            if(tokens[nr_token-1].type == '+'|| tokens[nr_token-1].type == '-' || tokens[nr_token-1].type == '*' || tokens[nr_token-1].type == '/' || nr_token == 0){
-              negative_flag = true;
-              break;
-            } else {
-              negative_flag = false;
-            }
-          case TK_DECIMAL:
-            if(negative_flag){
-              tokens[nr_token].type = '(';
-              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "(");
+          
+          //这种处理负数的方法并没有把负数当作一个整体，只是在负号前加上了一个括号，更优解法在思考中（11月11日）
+          //原来可以通过调整re编译的优先级来直接识别出负数，害（11月12日）
+          case TK_NEGATIVE:
+            if(tokens[nr_token-1].type == TK_DECIMAL || tokens[nr_token-1].type == TK_HEX || tokens[nr_token-1].type == TK_NEGATIVE || tokens[nr_token-1].type == ')'){
+              tokens[nr_token].type = '+';
+              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "+");
               nr_token++;
-
-              tokens[nr_token].type = '-';
-              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "-");
-              nr_token++;
-
-              tokens[nr_token].type = TK_DECIMAL;
+              tokens[nr_token].type = TK_NEGATIVE;
               snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%.*s", substr_len, substr_start);
               nr_token++;
-
-              tokens[nr_token].type = ')';
-              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), ")");
-              tokens[nr_token].str[substr_len] = '\0';
-              nr_token++;
-
-              negative_flag = false;
               break;
-            } 
+            }
+          case '-':
+            // if(tokens[nr_token-1].type == '+'|| tokens[nr_token-1].type == '-' || tokens[nr_token-1].type == '*' || tokens[nr_token-1].type == '/' || nr_token == 0){
+            //   negative_flag = true;
+            //   break;
+            // } else {
+            //   negative_flag = false;
+            // }
+          case TK_DECIMAL:
+            // if(negative_flag){
+            //   tokens[nr_token].type = '(';
+            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "(");
+            //   nr_token++;
+
+            //   tokens[nr_token].type = '-';
+            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "-");
+            //   nr_token++;
+
+            //   tokens[nr_token].type = TK_DECIMAL;
+            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%.*s", substr_len, substr_start);
+            //   nr_token++;
+
+            //   tokens[nr_token].type = ')';
+            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), ")");
+            //   tokens[nr_token].str[substr_len] = '\0';
+            //   nr_token++;
+
+            //   negative_flag = false;
+            //   break;
+            // } 
           case '+':
           case '*':
           case '/':
           case '(':
           case ')':
           case TK_EQ:
-          
+          case TK_HEX:
+          case TK_NEQ:
+          case TK_AND:
+          case TK_REG:
             tokens[nr_token].type = rules[i].token_type;
             
             strncpy(tokens[nr_token].str, substr_start, substr_len);
