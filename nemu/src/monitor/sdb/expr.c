@@ -108,7 +108,7 @@ static int eval(int p, int q) {
       当为“+”或“-”的右侧没有数字时，报错，当为“*”或“/”的右侧没有数字时，报错
       暂时没想到其他的情况
     */
-    if((tokens[p].type=='+'||tokens[p].type=='-')&&(tokens[q].type=='(')){
+    if((tokens[p].type=='+'||tokens[p].type=='-')||(tokens[q].type=='(')){
       return 0;
     }
     else {
@@ -175,7 +175,7 @@ static int eval(int p, int q) {
         }
       }
     }
-    printf("op = %d\n", op);
+    // printf("op = %d\n", op);
 
     if (op == -1) {
       printf("Bad expression: no operator found\n");
@@ -307,17 +307,17 @@ static bool make_token(char *e) {
       return false;
     }
   }
-  printf("nr_token = %d\n", nr_token);
-  //打印所有token的str
-  for(int i = 0; i < nr_token; i++){
-    printf("%-*s ", 4, tokens[i].str);
-  }
-  printf("\n");
-  for(int i = 0; i < nr_token; i++){
-    printf("%-*d ", 4, i);
-  }
-  printf("\n");
-  printf("————————————————————\n");
+  // printf("nr_token = %d\n", nr_token);
+  // //打印所有token的str
+  // for(int i = 0; i < nr_token; i++){
+  //   printf("%-*s ", 4, tokens[i].str);
+  // }
+  // printf("\n");
+  // for(int i = 0; i < nr_token; i++){
+  //   printf("%-*d ", 4, i);
+  // }
+  // printf("\n");
+  // printf("————————————————————\n");
   
   return true;
 }

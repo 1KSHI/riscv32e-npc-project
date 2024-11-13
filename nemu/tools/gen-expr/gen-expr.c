@@ -32,7 +32,8 @@ static char *code_format =
 "}";
 
 static void gen_rand_expr() {
-  buf[0] = '\0';
+  int num = rand() % 100; // 生成一个 0 到 99 之间的随机数
+  sprintf(buf, "%d", num); // 将随机数存储在 buf 中
 }
 
 int main(int argc, char *argv[]) {

@@ -51,7 +51,6 @@ static char* rl_gets() {
 
 
 
-
 static int cmd_c(char *args) {
   cpu_exec(-1);
   return 0;
@@ -102,21 +101,39 @@ static int cmd_x(char *args) {
 
 
 static int cmd_p(char *args) {
-    char *arg = args;
+    char *arg = strtok(args, " ");
+    bool success = true;
+    word_t result = 0;
     if (arg == NULL) {
-        printf("Unknown command 'e' without arguments\n");
-        return 0;
-    } else {
-        bool success = true;
-        word_t result = expr(arg, &success);
+      printf("Unknown command 'e' without arguments\n");
+      return 0;
+    } else if(strcmp(arg, "test") == 0) {
+      arg = strtok(NULL, " ");
+      int times = atoi(arg);
+      printf("Test expression %d times\n", times);
+      for(int i=0;i<times;i++){
+        arg = "1+2";
+        result = expr(arg, &success);
         if (success) {
-            printf("————————————————————\n");
-            printf("Dec = %d\n",result);
-            printf("Hex = %08x\n",result);
+        // printf("————————————————————\n");
+        printf("Dec = %d\n",result);
+        // printf("Hex = %08x\n",result);
         } else {
-            printf("Invalid expression\n");
+          printf("Invalid expression\n");
         }
+      }
+    } else {
+      result = expr(arg, &success);
+      if (success) {
+      // printf("————————————————————\n");
+      printf("Dec = %d\n",result);
+      printf("Hex = %08x\n",result);
+      } else {
+        printf("Invalid expression\n");
+      }
     }
+
+    
     
 
     return 0;
@@ -240,7 +257,10 @@ void sdb_mainloop() {
     int i;
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(cmd, cmd_table[i].name) == 0) {
-        if (cmd_table[i].handler(args) < 0) { return; }
+        if (cmd_table[i].handler(args) < 0) { 
+          nemu_state.state = NEMU_QUIT;
+          return;
+        }
         break;
       }
     }
