@@ -19,9 +19,9 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
-
+#include <memory/paddr.h>
 enum {
-  TK_NOTYPE = 256, TK_HEX,TK_NEGATIVE,TK_DECIMAL,TK_EQ,TK_NEQ,TK_AND,TK_REG
+  TK_NOTYPE = 256, TK_HEX,TK_NEGATIVE,TK_DECIMAL,TK_EQ,TK_NEQ,TK_AND,TK_REG,DEREF
 
   /* TODO: Add more token types */
 
@@ -81,6 +81,10 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
+int val1 = 0;
+int val2 = 0;
+int op_type = 0;
+
 static bool check_parentheses(int p, int q) {
   if (tokens[p].type == '(' && tokens[q].type == ')') {
     int count = 0;
@@ -121,7 +125,7 @@ static int eval(int p, int q) {
       return atoi(tokens[p].str);
     }
     else if (tokens[p].type == TK_HEX) {
-      return strtol(tokens[p].str, NULL, 16);
+      return (unsigned int)strtol(tokens[p].str, NULL, 0);
     }
     else if (tokens[p].type == TK_REG) {
       bool success = true;
@@ -148,7 +152,8 @@ static int eval(int p, int q) {
   }
   else {
     int parenthesis_flag = 0;
-    bool sum_sub_flag = false;
+    bool mul_flag = false;
+    bool sum_flag = false;
     bool sign_flag = false;
     int op = -1; // the position of 主运算符 in the token expression
     for (int i = p; i <= q; i++) {
@@ -159,12 +164,13 @@ static int eval(int p, int q) {
         if(tokens[i].type == TK_EQ || tokens[i].type == TK_AND || tokens[i].type == TK_NEQ){
           op = i;
           sign_flag = true;
-        }
-        else if (!sign_flag && (tokens[i].type == '+' || tokens[i].type == '-')) {
+        } else if (!sign_flag && (tokens[i].type == '+' || tokens[i].type == '-')) {
           op = i;
-          sum_sub_flag = true;
-        }
-        else if (!sign_flag && !sum_sub_flag && (tokens[i].type == '*' || tokens[i].type == '/')) {
+          sum_flag = true;
+        } else if (!sign_flag && !sum_flag && (tokens[i].type == '*' || tokens[i].type == '/')) {
+          op = i;
+          mul_flag = true;
+        } else if(!sign_flag && !sum_flag && !mul_flag && tokens[i].type == DEREF){
           op = i;
         }
       }
@@ -176,9 +182,13 @@ static int eval(int p, int q) {
       return 0;
     }
 
-    int val1 = eval(p, op - 1);
-    int val2 = eval(op + 1, q);
-    int op_type = tokens[op].type;
+    if(tokens[op].type != DEREF){
+      val1 = eval(p, op - 1);
+    }else{
+      val1 = 0;
+    }
+    val2 = eval(op + 1, q);
+    op_type = tokens[op].type;
 
     switch (op_type) {
       case '+': return val1 + val2;
@@ -188,6 +198,7 @@ static int eval(int p, int q) {
       case TK_EQ: return val1 == val2;
       case TK_NEQ: return val1 != val2;
       case TK_AND: return val1 && val2;
+      case DEREF: return paddr_read(val2,4);
       default: assert(0);
     }
   }
@@ -306,7 +317,7 @@ static bool make_token(char *e) {
     printf("%-*d ", 4, i);
   }
   printf("\n");
-  printf("equal to %d\n",eval(0, nr_token-1));
+  printf("————————————————————\n");
   
   return true;
 }
@@ -321,6 +332,21 @@ word_t expr(char *e, bool *success) {
 
   /* TODO: Insert codes to evaluate the expression. */
   //TODO();
+  for (int i = 0; i < nr_token; i ++) {
+    if(tokens[i].type == '*' && 
+        ( i == 0 || 
+          (
+          tokens[i - 1].type != TK_HEX && 
+          tokens[i - 1].type != TK_NEGATIVE && 
+          tokens[i - 1].type != TK_DECIMAL && 
+          tokens[i - 1].type != ')' && 
+          tokens[i - 1].type != TK_REG
+          )
+        ) 
+      ) {
+      tokens[i].type = DEREF;
+    }
+  }
 
-  return 0;
+  return eval(0, nr_token-1);
 }

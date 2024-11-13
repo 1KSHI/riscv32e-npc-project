@@ -74,6 +74,8 @@ static int cmd_info(char *args) {
     return 0;
   } else if (strcmp(arg, "r") == 0) {
     isa_reg_display();
+  } else if (strcmp(arg, "w") == 0) {
+    watchpoint_display();
   } else {
     printf("Unknown command 'info %s'\n", arg);
   }
@@ -99,7 +101,7 @@ static int cmd_x(char *args) {
 }
 
 
-static int cmd_e(char *args) {
+static int cmd_p(char *args) {
     char *arg = args;
     if (arg == NULL) {
         printf("Unknown command 'e' without arguments\n");
@@ -108,7 +110,9 @@ static int cmd_e(char *args) {
         bool success = true;
         word_t result = expr(arg, &success);
         if (success) {
-            printf("%d\n", result);
+            printf("————————————————————\n");
+            printf("Dec = %d\n",result);
+            printf("Hex = %08x\n",result);
         } else {
             printf("Invalid expression\n");
         }
@@ -118,6 +122,40 @@ static int cmd_e(char *args) {
     return 0;
 }
 
+static int cmd_w(char *args) {
+  if(args == NULL) {
+      printf("No expression\n");
+      return 0;
+  }
+
+  WP *wp = new_wp();
+  if (wp == NULL) {
+      printf("No enough space for a new watchpoint\n");
+      return 0;
+  }
+
+  strncpy(wp->expr, args, sizeof(wp->expr) - 1);
+  wp->expr[sizeof(wp->expr) - 1] = '\0';
+  wp->last_value = expr(args, NULL);
+  printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
+
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    printf("Unknown command 'd' without arguments\n");
+    return 0;
+  }
+  int NO = atoi(arg);
+  if(watchpoint_delete(NO)){
+    printf("Watchpoint %d deleted\n", NO);
+  } else {
+    printf("No watchpoint numbered %d\n", NO);
+  }
+  return 0;
+}
 
 static int cmd_q(char *args) {
   return -1;
@@ -136,7 +174,9 @@ static struct {
   { "si", "Execute N instructions in a single step", cmd_si },
   { "info", "Print the state of the program", cmd_info },
   { "x", "Scan Memory", cmd_x },
-  { "e", "Evaluate the value of an expression", cmd_e },
+  { "p", "Evaluate the value of an expression", cmd_p },
+  { "w", "Set a watchpoint", cmd_w },
+  { "d", "Delete a watchpoint", cmd_d },
 
   /* TODO: Add more commands */
 
