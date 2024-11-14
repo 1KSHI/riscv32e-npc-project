@@ -63,7 +63,7 @@ static void gen_rand_op() {
 }
 
 static void gen_rand_expr() {
-  if (paren_depth > 10) { // 限制括号嵌套深度
+  if (paren_depth > 10) {
     gen_num();
     return;
   }
@@ -80,7 +80,7 @@ static void gen_rand_expr() {
     default: 
       gen_rand_expr(); 
       gen_rand_op(); 
-      if (buf[buf_pos - 1] == '/') { // 如果生成的是除法操作符
+      if (buf[buf_pos - 1] == '/') {
         int num;
         do {
           num = rand() % 100;
@@ -91,6 +91,40 @@ static void gen_rand_expr() {
       }
       break;
   }
+}
+
+static void gen_rand_expr_test(int loop) {
+  for (int i = 0; i < loop; i ++) {
+    do {
+      buf_pos = 0;
+      paren_depth = 0;
+      gen_rand_expr();
+    } while (buf_pos > 32);
+
+    sprintf(code_buf, code_format, buf);
+
+    FILE *fp = fopen("/tmp/.code.c", "w");
+    assert(fp != NULL);
+    fputs(code_buf, fp);
+    fclose(fp);
+
+    int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
+    if (ret != 0) continue;
+
+    fp = popen("/tmp/.expr", "r");
+    assert(fp != NULL);
+
+    int result;
+    ret = fscanf(fp, "%d", &result);
+    pclose(fp);
+    bool success = true;
+    int result_cal = expr(buf, &success);
+    
+    if(result_cal==result)printf("success   ");
+    else printf("fail      ");
+    printf("%s\n",buf);
+  }
+  
 }
 
 
@@ -177,37 +211,7 @@ static int cmd_p(char *args) {
         sscanf(arg, "%d", &loop);
       }
       printf("Test expression %d times\n", loop);
-      int i;
-      for (i = 0; i < loop; i ++) {
-        do {
-          buf_pos = 0;
-          paren_depth = 0;
-          gen_rand_expr();
-        } while (buf_pos > 32);
-
-        sprintf(code_buf, code_format, buf);
-
-        FILE *fp = fopen("/tmp/.code.c", "w");
-        assert(fp != NULL);
-        fputs(code_buf, fp);
-        fclose(fp);
-
-        int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
-        if (ret != 0) continue;
-
-        fp = popen("/tmp/.expr", "r");
-        assert(fp != NULL);
-
-        int result;
-        ret = fscanf(fp, "%d", &result);
-        pclose(fp);
-        bool success = true;
-        int result_cal = expr(buf, &success);
-        
-        if(result_cal==result)printf("success   ");
-        else printf("fail      ");
-        printf("%s\n",buf);
-      }
+      gen_rand_expr_test(loop); 
     } else {
       bool success = true;
       result = expr(arg, &success);
