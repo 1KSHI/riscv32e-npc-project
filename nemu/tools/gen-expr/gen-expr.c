@@ -1,18 +1,3 @@
-/***************************************************************************************
-* Copyright (c) 2014-2024 Zihao Yu, Nanjing University
-*
-* NEMU is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2.
-* You may obtain a copy of Mulan PSL v2 at:
-*          http://license.coscl.org.cn/MulanPSL2
-*
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-* MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-*
-* See the Mulan PSL v2 for more details.
-***************************************************************************************/
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,9 +16,58 @@ static char *code_format =
 "  return 0; "
 "}";
 
+static int buf_pos = 0;
+static int paren_depth = 0; // 用于跟踪括号的嵌套深度
+
+static int choose(int n) {
+  return rand() % n;
+}
+
+static void gen_num() {
+  int num = rand() % 100;
+  buf_pos += sprintf(buf + buf_pos, "%d", num);
+}
+
+static void gen(char c) {
+  buf[buf_pos++] = c;
+  buf[buf_pos] = '\0';
+}
+
+static void gen_rand_op() {
+  char ops[] = "+-*/";
+  char op = ops[choose(4)];
+  gen(op);
+}
+
 static void gen_rand_expr() {
-  int num = rand() % 100; // 生成一个 0 到 99 之间的随机数
-  sprintf(buf, "%d", num); // 将随机数存储在 buf 中
+  if (paren_depth > 10) { // 限制括号嵌套深度
+    gen_num();
+    return;
+  }
+
+  switch (choose(3)) {
+    case 0: gen_num(); break;
+    case 1: 
+      gen('('); 
+      paren_depth++;
+      gen_rand_expr(); 
+      gen(')'); 
+      paren_depth--;
+      break;
+    default: 
+      gen_rand_expr(); 
+      gen_rand_op(); 
+      if (buf[buf_pos - 1] == '/') { // 如果生成的是除法操作符
+        int num;
+        do {
+          num = rand() % 100;
+        } while (num == 0); // 确保除数不为零
+        buf_pos += sprintf(buf + buf_pos, "%d", num);
+      } else {
+        gen_rand_expr();
+      }
+      break;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -45,6 +79,8 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    buf_pos = 0; // 重置 buf 位置
+    paren_depth = 0; // 重置括号嵌套深度
     gen_rand_expr();
 
     sprintf(code_buf, code_format, buf);
@@ -64,7 +100,7 @@ int main(int argc, char *argv[]) {
     ret = fscanf(fp, "%d", &result);
     pclose(fp);
 
-    printf("%u %s\n", result, buf);
+    printf("%d %s\n", result, buf);
   }
   return 0;
 }

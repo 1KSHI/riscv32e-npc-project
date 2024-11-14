@@ -28,6 +28,9 @@ typedef struct watchpoint {
 } WP;
 
 WP* new_wp();
+
+
+
 bool watchpoint_delete(int NO);
 void watchpoint_display();
 void check_watchpoints();

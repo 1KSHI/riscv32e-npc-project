@@ -81,9 +81,7 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
-int val1 = 0;
-int val2 = 0;
-int op_type = 0;
+
 
 static bool check_parentheses(int p, int q) {
   if (tokens[p].type == '(' && tokens[q].type == ')') {
@@ -181,15 +179,19 @@ static int eval(int p, int q) {
       printf("Bad expression: no operator found\n");
       return 0;
     }
+    int val1 = 0;
+    int val2 = 0;
+    int op_type = 0;
 
     if(tokens[op].type != DEREF){
       val1 = eval(p, op - 1);
     }else{
       val1 = 0;
     }
+
     val2 = eval(op + 1, q);
     op_type = tokens[op].type;
-
+    
     switch (op_type) {
       case '+': return val1 + val2;
       case '-': return val1 - val2;
@@ -219,8 +221,8 @@ static bool make_token(char *e) {
         char *substr_start = e + position;
         int substr_len = pmatch.rm_eo;
 
-        Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
-            i, rules[i].regex, position, substr_len, substr_len, substr_start);
+        // Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+        //     i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
 
@@ -307,8 +309,8 @@ static bool make_token(char *e) {
       return false;
     }
   }
-  // printf("nr_token = %d\n", nr_token);
-  // //打印所有token的str
+  //printf("nr_token = %d\n", nr_token);
+  //打印所有token的str
   // for(int i = 0; i < nr_token; i++){
   //   printf("%-*s ", 4, tokens[i].str);
   // }

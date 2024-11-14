@@ -26,9 +26,72 @@
 
 static int is_batch_mode = false;
 
+//value of the expression test
+static char buf[65536] = {};
+static char code_buf[65536 + 128] = {};
+static char *code_format =
+"#include <stdio.h>\n"
+"int main() { "
+"  unsigned result = %s; "
+"  printf(\"%%u\", result); "
+"  return 0; "
+"}";
+static int buf_pos = 0;
+static int paren_depth = 0;
+
 void init_regex();
 void init_wp_pool();
 
+static int choose(int n) {
+  return rand() % n;
+}
+
+static void gen_num() {
+  int num = rand() % 100;
+  buf_pos += sprintf(buf + buf_pos, "%d", num);
+}
+
+static void gen(char c) {
+  buf[buf_pos++] = c;
+  buf[buf_pos] = '\0';
+}
+
+static void gen_rand_op() {
+  char ops[] = "+-*/";
+  char op = ops[choose(4)];
+  gen(op);
+}
+
+static void gen_rand_expr() {
+  if (paren_depth > 10) { // 限制括号嵌套深度
+    gen_num();
+    return;
+  }
+
+  switch (choose(3)) {
+    case 0: gen_num(); break;
+    case 1: 
+      gen('('); 
+      paren_depth++;
+      gen_rand_expr(); 
+      gen(')'); 
+      paren_depth--;
+      break;
+    default: 
+      gen_rand_expr(); 
+      gen_rand_op(); 
+      if (buf[buf_pos - 1] == '/') { // 如果生成的是除法操作符
+        int num;
+        do {
+          num = rand() % 100;
+        } while (num == 0); // 确保除数不为零
+        buf_pos += sprintf(buf + buf_pos, "%d", num);
+      } else {
+        gen_rand_expr();
+      }
+      break;
+  }
+}
 
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
@@ -48,8 +111,6 @@ static char* rl_gets() {
 
   return line_read;
 }
-
-
 
 static int cmd_c(char *args) {
   cpu_exec(-1);
@@ -94,7 +155,7 @@ static int cmd_x(char *args) {
     for(i=0;i<N;i++){
     printf("%lx:%08x\n",addr,paddr_read(addr,4));
     addr += 4;
-}
+    }
 
     return 0;
 }
@@ -102,27 +163,53 @@ static int cmd_x(char *args) {
 
 static int cmd_p(char *args) {
     char *arg = strtok(args, " ");
-    bool success = true;
+    
     word_t result = 0;
     if (arg == NULL) {
       printf("Unknown command 'e' without arguments\n");
       return 0;
     } else if(strcmp(arg, "test") == 0) {
       arg = strtok(NULL, " ");
-      int times = atoi(arg);
-      printf("Test expression %d times\n", times);
-      for(int i=0;i<times;i++){
-        arg = "1+2";
-        result = expr(arg, &success);
-        if (success) {
-        // printf("————————————————————\n");
-        printf("Dec = %d\n",result);
-        // printf("Hex = %08x\n",result);
-        } else {
-          printf("Invalid expression\n");
-        }
+      int seed = time(0);
+      srand(seed);
+      int loop = 1;
+      if (arg != NULL) {
+        sscanf(arg, "%d", &loop);
+      }
+      printf("Test expression %d times\n", loop);
+      int i;
+      for (i = 0; i < loop; i ++) {
+        do {
+          buf_pos = 0;
+          paren_depth = 0;
+          gen_rand_expr();
+        } while (buf_pos > 32);
+
+        sprintf(code_buf, code_format, buf);
+
+        FILE *fp = fopen("/tmp/.code.c", "w");
+        assert(fp != NULL);
+        fputs(code_buf, fp);
+        fclose(fp);
+
+        int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
+        if (ret != 0) continue;
+
+        fp = popen("/tmp/.expr", "r");
+        assert(fp != NULL);
+
+        int result;
+        ret = fscanf(fp, "%d", &result);
+        pclose(fp);
+        bool success = true;
+        int result_cal = expr(buf, &success);
+        
+        if(result_cal==result)printf("success   ");
+        else printf("fail      ");
+        printf("%s\n",buf);
       }
     } else {
+      bool success = true;
       result = expr(arg, &success);
       if (success) {
       // printf("————————————————————\n");
@@ -132,9 +219,6 @@ static int cmd_p(char *args) {
         printf("Invalid expression\n");
       }
     }
-
-    
-    
 
     return 0;
 }
