@@ -39,6 +39,7 @@ void test_expr_from_file(const char *filename) {
   }
 
   char line[256];
+  int count[2] = {0, 0};
   while (fgets(line, sizeof(line), file)) {
     int expected_result;
     char expression[256];
@@ -55,10 +56,14 @@ void test_expr_from_file(const char *filename) {
       printf("Failed to evaluate expression: %s\n", expression);
     } else if (result == expected_result) {
       printf("PASS: %s = %d\n", expression, result);
+      count[0]++;
     } else {
       printf("FAIL: %s, expected %d but got %d\n", expression, expected_result, result);
+      count[1]++;
     }
   }
+  int total = count[0] + count[1];
+  printf("Total: %d, Correct: %d, Wrong: %d\n", total, count[0], count[1]);
 
   fclose(file);
 }
