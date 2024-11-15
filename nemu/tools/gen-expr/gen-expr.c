@@ -7,7 +7,7 @@
 
 // this should be enough
 static char buf[65536] = {};
-static char code_buf[65536 + 128] = {}; // a little larger than `buf`
+static char code_buf[65536 + 128] = {};
 static char *code_format =
 "#include <stdio.h>\n"
 "int main() { "
@@ -17,7 +17,7 @@ static char *code_format =
 "}";
 
 static int buf_pos = 0;
-static int paren_depth = 0; // 用于跟踪括号的嵌套深度
+static int paren_depth = 0;
 
 static int choose(int n) {
   return rand() % n;
@@ -40,7 +40,7 @@ static void gen_rand_op() {
 }
 
 static void gen_rand_expr() {
-  if (paren_depth > 10) { // 限制括号嵌套深度
+  if (paren_depth > 10) {
     gen_num();
     return;
   }
@@ -57,7 +57,7 @@ static void gen_rand_expr() {
     default: 
       gen_rand_expr(); 
       gen_rand_op(); 
-      if (buf[buf_pos - 1] == '/') { // 如果生成的是除法操作符
+      if (buf[buf_pos - 1] == '/') {
         int num;
         do {
           num = rand() % 100;
@@ -79,9 +79,11 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
-    buf_pos = 0; // 重置 buf 位置
-    paren_depth = 0; // 重置括号嵌套深度
-    gen_rand_expr();
+    do {
+      buf_pos = 0;
+      paren_depth = 0;
+      gen_rand_expr();
+    } while (buf_pos > 128);
 
     sprintf(code_buf, code_format, buf);
 

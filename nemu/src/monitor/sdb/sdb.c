@@ -26,105 +26,41 @@
 
 static int is_batch_mode = false;
 
-//value of the expression test
-static char buf[65536] = {};
-static char code_buf[65536 + 128] = {};
-static char *code_format =
-"#include <stdio.h>\n"
-"int main() { "
-"  unsigned result = %s; "
-"  printf(\"%%u\", result); "
-"  return 0; "
-"}";
-static int buf_pos = 0;
-static int paren_depth = 0;
-
 void init_regex();
 void init_wp_pool();
 
-static int choose(int n) {
-  return rand() % n;
-}
 
-static void gen_num() {
-  int num = rand() % 100;
-  buf_pos += sprintf(buf + buf_pos, "%d", num);
-}
 
-static void gen(char c) {
-  buf[buf_pos++] = c;
-  buf[buf_pos] = '\0';
-}
-
-static void gen_rand_op() {
-  char ops[] = "+-*/";
-  char op = ops[choose(4)];
-  gen(op);
-}
-
-static void gen_rand_expr() {
-  if (paren_depth > 10) {
-    gen_num();
+void test_expr_from_file(const char *filename) {
+  FILE *file = fopen(filename, "r");
+  if (!file) {
+    perror("Failed to open file");
     return;
   }
 
-  switch (choose(3)) {
-    case 0: gen_num(); break;
-    case 1: 
-      gen('('); 
-      paren_depth++;
-      gen_rand_expr(); 
-      gen(')'); 
-      paren_depth--;
-      break;
-    default: 
-      gen_rand_expr(); 
-      gen_rand_op(); 
-      if (buf[buf_pos - 1] == '/') {
-        int num;
-        do {
-          num = rand() % 100;
-        } while (num == 0); // 确保除数不为零
-        buf_pos += sprintf(buf + buf_pos, "%d", num);
-      } else {
-        gen_rand_expr();
-      }
-      break;
-  }
-}
+  char line[256];
+  while (fgets(line, sizeof(line), file)) {
+    int expected_result;
+    char expression[256];
 
-static void gen_rand_expr_test(int loop) {
-  for (int i = 0; i < loop; i ++) {
-    do {
-      buf_pos = 0;
-      paren_depth = 0;
-      gen_rand_expr();
-    } while (buf_pos > 32);
+    if (sscanf(line, "%d %[^\n]", &expected_result, expression) != 2) {
+      fprintf(stderr, "Failed to parse line: %s", line);
+      continue;
+    }
 
-    sprintf(code_buf, code_format, buf);
-
-    FILE *fp = fopen("/tmp/.code.c", "w");
-    assert(fp != NULL);
-    fputs(code_buf, fp);
-    fclose(fp);
-
-    int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
-    if (ret != 0) continue;
-
-    fp = popen("/tmp/.expr", "r");
-    assert(fp != NULL);
-
-    int result;
-    ret = fscanf(fp, "%d", &result);
-    pclose(fp);
     bool success = true;
-    int result_cal = expr(buf, &success);
-    
-    if(result_cal==result)printf("success   ");
-    else printf("fail      ");
-    printf("%s\n",buf);
+    int result = expr(expression, &success);
+
+    if (!success) {
+      printf("Failed to evaluate expression: %s\n", expression);
+    } else if (result == expected_result) {
+      printf("PASS: %s = %d\n", expression, result);
+    } else {
+      printf("FAIL: %s, expected %d but got %d\n", expression, expected_result, result);
+    }
   }
-  
+
+  fclose(file);
 }
 
 
@@ -203,15 +139,8 @@ static int cmd_p(char *args) {
       printf("Unknown command 'e' without arguments\n");
       return 0;
     } else if(strcmp(arg, "test") == 0) {
-      arg = strtok(NULL, " ");
-      int seed = time(0);
-      srand(seed);
-      int loop = 1;
-      if (arg != NULL) {
-        sscanf(arg, "%d", &loop);
-      }
-      printf("Test expression %d times\n", loop);
-      gen_rand_expr_test(loop); 
+      printf("Test expression \n");
+      test_expr_from_file("/tmp/input");
     } else {
       bool success = true;
       result = expr(arg, &success);
