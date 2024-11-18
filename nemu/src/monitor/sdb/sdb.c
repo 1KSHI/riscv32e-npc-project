@@ -163,8 +163,8 @@ static int cmd_p(char *args) {
 
 static int cmd_w(char *args) {
   if(args == NULL) {
-      printf("No expression\n");
-      return 0;
+    printf("No expression\n");
+    
   }
 
   WP *wp = new_wp();
@@ -173,10 +173,22 @@ static int cmd_w(char *args) {
       return 0;
   }
 
-  strncpy(wp->expr, args, sizeof(wp->expr) - 1);
+  char *arg = strtok(args, "=");
+  printf("arg:%s\n",arg);
+
+  if(strcmp(arg, "pc") == 0) {//断点判断
+    printf("pc\n");
+    arg = strtok(NULL, "=");
+    printf("arg:%s\n",arg);
+    wp->state = true;
+  }else{
+    wp->state = false;
+  }
+
+  strncpy(wp->expr, arg, sizeof(wp->expr) - 1);
   wp->expr[sizeof(wp->expr) - 1] = '\0';
-  wp->last_value = expr(args, NULL);
-  printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
+  wp->last_value = expr(arg, NULL);
+  wp->state?printf("Stoppoint %d: %s\n", wp->NO, wp->expr):printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
 
   return 0;
 }

@@ -64,19 +64,23 @@ void free_wp(WP *wp) {
   }
 }
 
-void check_watchpoints() {
+void check_watchpoints(vaddr_t pc) {
   WP *wp = head;
   while (wp != NULL) {
     bool success = true;
-    uint64_t new_value = expr(wp->expr, &success);
+    uint64_t new_value = expr(wp->expr+wp->state, &success);
     // printf("expr = %s\n", wp->expr);
-    // printf("new_value = %16lx\n", new_value);
-    // printf("last_value = %16lx\n", wp->last_value);
+    // printf("new_value = %016lx\n", new_value);
+    // printf("last_value = %016lx\n", wp->last_value);
     // printf("success = %d\n", success);
-    if (success && new_value != wp->last_value) {
+    // printf("pc = "FMT_WORD"\n", pc);
+    if (wp->state==0 && success && new_value != wp->last_value) {
       printf("Watchpoint %d triggered: %s\n", wp->NO, wp->expr);
-      printf("Old value = %16lx, New value = %lu\n", wp->last_value, new_value);
+      printf("Old value = 0x%08lx, New value = 0x%08lx\n", wp->last_value, new_value);
       wp->last_value = new_value;
+      nemu_state.state = NEMU_STOP;
+    }else if(wp->state==1 && (pc == new_value)){
+      printf("Stoppoint %d triggered: %s\n", wp->NO, wp->expr);
       nemu_state.state = NEMU_STOP;
     }
     wp = wp->next;
@@ -86,7 +90,7 @@ void check_watchpoints() {
 void watchpoint_display() {
   WP *wp = head;
   while (wp != NULL) {
-    printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
+    wp->state?printf("Stoppoint %d: %s\n", wp->NO, wp->expr):printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
     wp = wp->next;
   }
 }

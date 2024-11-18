@@ -41,7 +41,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 #ifdef CONFIG_CONFIG_WATCHPOINT
   printf("check watchpoints\n");
-  check_watchpoints();
+  check_watchpoints(cpu.pc);
 #endif
   
 }
