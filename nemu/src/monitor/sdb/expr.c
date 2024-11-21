@@ -49,7 +49,7 @@ static struct rule {
   {"==", TK_EQ},        // equal
   {"!=", TK_NEQ},       // not equal
   {"&&", TK_AND},       // and
-  {"\\$[a-zA-Z0-9]+", TK_REG}, // register name
+  {"\\$[$a-zA-Z0-9]+", TK_REG}, // register name
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -88,7 +88,7 @@ static bool check_parentheses(int p, int q) {
     int count = 0;
     for (int i = p + 1; i < q; i++) {
       if (tokens[i].type == '(') count++;
-      if (tokens[i].type == ')') count--;
+      else if (tokens[i].type == ')') count--;
       if (count < 0) return false;
     }
     return count == 0;
@@ -119,27 +119,26 @@ static int eval(int p, int q) {
      * For now this token should be a number.
      * Return the value of the number.
      */
-    if (tokens[p].type == TK_DECIMAL || tokens[p].type == TK_NEGATIVE) {
-      return atoi(tokens[p].str);
-    }
-    else if (tokens[p].type == TK_HEX) {
-      return (unsigned int)strtol(tokens[p].str, NULL, 0);
-    }
-    else if (tokens[p].type == TK_REG) {
-      bool success = true;
-      word_t result = isa_reg_str2val(tokens[p].str+1, &success);
-      if (success) {
-        return result;
+    switch (tokens[p].type) {
+      case TK_DECIMAL:
+      case TK_NEGATIVE:
+        return atoi(tokens[p].str);
+      case TK_HEX:
+        return (unsigned int)strtol(tokens[p].str, NULL, 0);
+      case TK_REG: {
+        bool success = true;
+        word_t result = isa_reg_str2val(tokens[p].str + 1, &success);
+        if (success) {
+          return result;
+        } else {
+          printf("Bad expression: register name not found\n");
+          return 0;
+        }
       }
-      else {
-        printf("Bad expression: register name not found\n");
+      default:
+        /* Bad expression */
+        printf("Bad expression: single token is not a number\n");
         return 0;
-      }
-    }
-    else {
-      /* Bad expression */
-      printf("Bad expression: single token is not a number\n");
-      return 0;
     }
   }
   else if (check_parentheses(p, q) == true) {
@@ -150,48 +149,48 @@ static int eval(int p, int q) {
   }
   else {
     int parenthesis_flag = 0;
-    bool mul_flag = false;
-    bool sum_flag = false;
-    bool sign_flag = false;
     int op = -1; // the position of 主运算符 in the token expression
     for (int i = p; i <= q; i++) {
       if (tokens[i].type == '(') parenthesis_flag++;
       if (tokens[i].type == ')') parenthesis_flag--;
 
       if (parenthesis_flag == 0) {
-        if(tokens[i].type == TK_EQ || tokens[i].type == TK_AND || tokens[i].type == TK_NEQ){
-          op = i;
-          sign_flag = true;
-        } else if (!sign_flag && (tokens[i].type == '+' || tokens[i].type == '-')) {
-          op = i;
-          sum_flag = true;
-        } else if (!sign_flag && !sum_flag && (tokens[i].type == '*' || tokens[i].type == '/')) {
-          op = i;
-          mul_flag = true;
-        } else if(!sign_flag && !sum_flag && !mul_flag && tokens[i].type == DEREF){
-          op = i;
+        switch (tokens[i].type) {
+          case TK_EQ:
+          case TK_AND:
+          case TK_NEQ:
+            op = i;
+            break;
+          case '+':
+          case '-':
+            if (op == -1 || (tokens[op].type != TK_EQ && tokens[op].type != TK_AND && tokens[op].type != TK_NEQ)) {
+              op = i;
+            }
+            break;
+          case '*':
+          case '/':
+            if (op == -1 || (tokens[op].type != TK_EQ && tokens[op].type != TK_AND && tokens[op].type != TK_NEQ && tokens[op].type != '+' && tokens[op].type != '-')) {
+              op = i;
+            }
+            break;
+          case DEREF:
+            if (op == -1) {
+              op = i;
+            }
+            break;
         }
       }
     }
-    // printf("op = %d\n", op);
 
     if (op == -1) {
       printf("Bad expression: no operator found\n");
       return 0;
     }
-    int val1 = 0;
-    int val2 = 0;
-    int op_type = 0;
 
-    if(tokens[op].type != DEREF){
-      val1 = eval(p, op - 1);
-    }else{
-      val1 = 0;
-    }
+    int val1 = (tokens[op].type != DEREF) ? eval(p, op - 1) : 0;
+    int val2 = eval(op + 1, q);
+    int op_type = tokens[op].type;
 
-    val2 = eval(op + 1, q);
-    op_type = tokens[op].type;
-    
     switch (op_type) {
       case '+': return val1 + val2;
       case '-': return val1 - val2;
@@ -200,7 +199,7 @@ static int eval(int p, int q) {
       case TK_EQ: return val1 == val2;
       case TK_NEQ: return val1 != val2;
       case TK_AND: return val1 && val2;
-      case DEREF: return paddr_read(val2,4);
+      case DEREF: return paddr_read(val2, 4);
       default: assert(0);
     }
   }
@@ -246,35 +245,8 @@ static bool make_token(char *e) {
               nr_token++;
               break;
             }
-          case '-':
-            // if(tokens[nr_token-1].type == '+'|| tokens[nr_token-1].type == '-' || tokens[nr_token-1].type == '*' || tokens[nr_token-1].type == '/' || nr_token == 0){
-            //   negative_flag = true;
-            //   break;
-            // } else {
-            //   negative_flag = false;
-            // }
           case TK_DECIMAL:
-            // if(negative_flag){
-            //   tokens[nr_token].type = '(';
-            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "(");
-            //   nr_token++;
-
-            //   tokens[nr_token].type = '-';
-            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "-");
-            //   nr_token++;
-
-            //   tokens[nr_token].type = TK_DECIMAL;
-            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%.*s", substr_len, substr_start);
-            //   nr_token++;
-
-            //   tokens[nr_token].type = ')';
-            //   snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), ")");
-            //   tokens[nr_token].str[substr_len] = '\0';
-            //   nr_token++;
-
-            //   negative_flag = false;
-            //   break;
-            // } 
+          case '-':
           case '+':
           case '*':
           case '/':
@@ -285,6 +257,7 @@ static bool make_token(char *e) {
           case TK_NEQ:
           case TK_AND:
           case TK_REG:
+          
             tokens[nr_token].type = rules[i].token_type;
             
             strncpy(tokens[nr_token].str, substr_start, substr_len);
@@ -309,8 +282,8 @@ static bool make_token(char *e) {
       return false;
     }
   }
-  //printf("nr_token = %d\n", nr_token);
-  //打印所有token的str
+  // printf("nr_token = %d\n", nr_token);
+  // //打印所有token的str
   // for(int i = 0; i < nr_token; i++){
   //   printf("%-*s ", 4, tokens[i].str);
   // }
