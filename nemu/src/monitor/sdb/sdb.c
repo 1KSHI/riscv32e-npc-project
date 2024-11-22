@@ -173,12 +173,12 @@ static int cmd_w(char *args) {
       return 0;
   }
 
-  char *arg = strtok(args, "=");
+  char *arg = strtok(args, "==");
   printf("arg:%s\n",arg);
 
-  if(strcmp(arg, "pc") == 0) {//断点判断
+  if(strcmp(arg, "&pc") == 0) {//断点判断
     printf("pc\n");
-    arg = strtok(NULL, "=");
+    arg = strtok(NULL, "==");
     printf("arg:%s\n",arg);
     wp->state = true;
   }else{

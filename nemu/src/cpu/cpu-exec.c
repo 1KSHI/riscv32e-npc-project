@@ -43,7 +43,6 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   printf("check watchpoints\n");
   check_watchpoints(cpu.pc);
 #endif
-  
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
