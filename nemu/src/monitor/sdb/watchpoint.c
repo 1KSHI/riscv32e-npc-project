@@ -75,12 +75,12 @@ void check_watchpoints(vaddr_t pc) {
     // printf("success = %d\n", success);
     // printf("pc = "FMT_WORD"\n", pc);
     if (wp->state==0 && success && new_value != wp->last_value) {
-      printf("Watchpoint %d triggered: %s\n", wp->NO, wp->expr);
+      printf("Watchpoint %d triggered: %s at pc=%8x\n", wp->NO, wp->expr, pc-4);
       printf("Old value = 0x%08lx, New value = 0x%08lx\n", wp->last_value, new_value);
       wp->last_value = new_value;
       nemu_state.state = NEMU_STOP;
     }else if(wp->state==1 && (pc == new_value)){
-      printf("Stoppoint %d triggered: %s\n", wp->NO, wp->expr);
+      printf("Stoppoint %d triggered: %s at pc=%8x\n", wp->NO, wp->expr, pc);
       nemu_state.state = NEMU_STOP;
     }
     wp = wp->next;

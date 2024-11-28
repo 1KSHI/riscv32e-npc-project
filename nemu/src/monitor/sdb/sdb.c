@@ -108,7 +108,12 @@ static int cmd_info(char *args) {
     printf("Unknown command 'info' without arguments\n");
     return 0;
   } else if (strcmp(arg, "r") == 0) {
-    isa_reg_display();
+    arg = strtok(NULL, " ");
+    if(arg == NULL){
+      isa_reg_display();
+    }else{
+      isa_reg_display_one(arg);
+    }
   } else if (strcmp(arg, "w") == 0) {
     watchpoint_display();
   } else {

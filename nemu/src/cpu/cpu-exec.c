@@ -23,7 +23,7 @@
  * This is useful when you use the `si' command.
  * You can modify this value as you want.
  */
-#define MAX_INST_TO_PRINT 10
+#define MAX_INST_TO_PRINT 50
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
@@ -40,7 +40,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 
 #ifdef CONFIG_CONFIG_WATCHPOINT
-  printf("check watchpoints\n");
+  // printf("check");
   check_watchpoints(cpu.pc);
 #endif
 }

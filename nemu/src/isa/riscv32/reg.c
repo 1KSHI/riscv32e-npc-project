@@ -29,6 +29,16 @@ void isa_reg_display() {
   }
 }
 
+void isa_reg_display_one(char *reg) {
+  for (int i = 0; i < sizeof(regs) / sizeof(regs[0]); i++) {
+    if(strcmp(regs[i], reg) == 0) {
+      printf("%s\t0x%08x\n", regs[i], cpu.gpr[i]);
+      return;
+    }
+  }
+  printf("Unknown register name: %s\n", reg);
+}
+
 word_t isa_reg_str2val(const char *s, bool *success) {
   for (int i = 0; i < sizeof(regs) / sizeof(regs[0]); i++) {
     if (strcmp(regs[i], s) == 0) {
