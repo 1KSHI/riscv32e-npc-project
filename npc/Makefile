@@ -2,7 +2,7 @@ VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 #yosys-sta define:
 LIB_PATH = $(PROJ_PATH)/yosys
 
-DESIGN ?= top
+DESIGN ?= ysyx_24110026_top
 SDC_FILE ?= $(PROJ_PATH)/sdc/top.sdc
 RTL_FILES ?= $(shell find $(PROJ_PATH)/vsrc -name "*.v")
 export CLK_FREQ_MHZ ?= 500
@@ -15,7 +15,7 @@ TIMING_RPT = $(RESULT_DIR)/$(DESIGN).rpt
 
 
 #verilator define:
-TOPNAME = top
+TOPNAME = ysyx_24110026_top
 INC_PATH = $(OBJ_DIR)
 
 BUILD_DIR = ./build
@@ -37,6 +37,7 @@ CSRCS += $(SRC_AUTO_BIND)
 
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 	@rm -rf $(OBJ_DIR)
+	@rm dump.vcd
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		--top-module $(TOPNAME) $^ \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \

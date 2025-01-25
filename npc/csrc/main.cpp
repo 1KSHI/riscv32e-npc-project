@@ -1,11 +1,11 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
-#include <Vtop.h>//user set
+#include <Vysyx_24110026_top.h>//user set
 
 VerilatedContext* contextp = NULL;
 VerilatedVcdC* tfp = NULL;
 
-static Vtop* top;//user set
+static Vysyx_24110026_top* top;//user set
 
 uint32_t mem[64]={};
 
@@ -18,7 +18,7 @@ void step_and_dump_wave(){
 void sim_init(){
   contextp = new VerilatedContext;
   tfp = new VerilatedVcdC;
-  top = new Vtop;
+  top = new Vysyx_24110026_top;
 
   contextp->traceEverOn(true);
   top->trace(tfp, 0);
@@ -54,9 +54,12 @@ void sim_exit(){
 
 int main() {
   sim_init();
-  top->a=1;
-  top->b=0;
-  top->cin=1;
+  single_cycle();
+  single_cycle();
+  top->inst = 0x0000006f;
+  single_cycle();
+  single_cycle();
+  single_cycle();
   single_cycle();
   sim_exit();
 
