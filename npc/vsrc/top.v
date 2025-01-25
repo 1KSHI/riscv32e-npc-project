@@ -34,6 +34,26 @@ assign pc_dyn=pc_ctrl?pc_beq:pc_sta;
 
 assign pc_sta=pc+4;
 
+wire inst_type;
+wire [7:0]alu_op;
+wire [31:0] rs1_data;
+wire [31:0] rs2_data;
+wire [31:0] branch_offset;
+wire [31:0] jump_offset;
+
+ysyx_24110026_decoder ysyx_24110026_decoder(
+    .clk(clk),
+    .rst(rst),
+    .inst(inst),
+    .inst_type(inst_type),
+    .alu_op(alu_op),
+    .rs1_data(rs1_data),
+    .rs2_data(rs2_data),
+    .branch_offset(branch_offset),
+    .jump_offset(jump_offset)
+);
+
+
 endmodule
 
 module ysyx_24110026_decoder(
@@ -68,12 +88,12 @@ wire [31:0] imm_j = {inst[31]?11'b1:11'b0,inst[31],inst[19:12],inst[20],inst[30:
 //     3'b100:assign rs2_data=imm_u;
 // endcase
 
-always@(*)begin
-    if(inst_I_type)rs2_data=imm_i;
-    else if(inst_S_type)rs2_data=imm_s;
-    else if(inst_U_type)rs2_data=imm_u;
-    else rs2_data=32'b0;
-end
+// always@(*)begin
+//     if(inst_I_type)rs2_data=imm_i;
+//     else if(inst_S_type)rs2_data=imm_s;
+//     else if(inst_U_type)rs2_data=imm_u;
+//     else rs2_data=32'b0;
+// end
 
 
 assign branch_offset=inst_B_type?imm_b:32'b0;
@@ -148,7 +168,6 @@ wire inst_srai = inst_I_type_base & funct3[2] & ~funct3[1] & funct3[0];
 //div
 
 //rem
-wire [7:0]alu_op;
 //alu_add
 assign alu_op[0] =  inst_add | inst_addi | inst_auipc | inst_jalr | inst_jal | 
                 inst_lb | inst_lh | inst_lw | inst_lbu | inst_lhu | inst_lwu |

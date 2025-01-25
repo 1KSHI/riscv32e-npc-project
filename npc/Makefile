@@ -37,7 +37,7 @@ CSRCS += $(SRC_AUTO_BIND)
 
 $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 	@rm -rf $(OBJ_DIR)
-	@rm dump.vcd
+
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		--top-module $(TOPNAME) $^ \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
@@ -71,6 +71,7 @@ $(TIMING_RPT): $(SCRIPT_DIR)/sta.tcl $(SDC_FILE) $(NETLIST_FIXED_V)
 clean:
 	rm -rf $(BUILD_DIR) *.log *.dmp *.vpd core
 	-rm -rf $(LIB_PATH)/result/
+	-rm dump.vcd
 
 .PHONY: init syn fix-fanout sta clean
 
