@@ -40,6 +40,7 @@ wire [31:0] rs1_data;
 wire [31:0] rs2_data;
 wire [31:0] branch_offset;
 wire [31:0] jump_offset;
+wire [31:0] alu_out;
 
 ysyx_24110026_decoder ysyx_24110026_decoder(
     .clk(clk),
@@ -51,6 +52,15 @@ ysyx_24110026_decoder ysyx_24110026_decoder(
     .rs2_data(rs2_data),
     .branch_offset(branch_offset),
     .jump_offset(jump_offset)
+);
+
+ysyx_24110026_excute ysyx_24110026_excute(
+    .clk(clk),
+    .rst(rst),
+    .alu_op(alu_op),
+    .rs1_data(rs1_data),
+    .rs2_data(rs2_data),
+    .alu_out(alu_out)
 );
 
 
@@ -75,6 +85,8 @@ wire [4:0] rs2_addr = inst[24:20];
 wire [4:0] rd_addr = inst[11:7];
 wire [2:0] funct3 = inst[14:12];
 wire [6:0] funct7 = inst[31:25];
+assign rs1_data={27'b0,rs1_addr};
+assign rs2_data={27'b0,rs2_addr};
 
 wire [31:0] imm_i = {inst[31]?20'b1:20'b0,inst[31:20]};
 wire [31:0] imm_s = {inst[31]?20'b1:20'b0,inst[31:25],inst[11:7]};
@@ -168,24 +180,24 @@ wire inst_srai = inst_I_type_base & funct3[2] & ~funct3[1] & funct3[0];
 //div
 
 //rem
-//alu_add
+//alu_add 001
 assign alu_op[0] =  inst_add | inst_addi | inst_auipc | inst_jalr | inst_jal | 
                 inst_lb | inst_lh | inst_lw | inst_lbu | inst_lhu | inst_lwu |
                 inst_sb | inst_sh | inst_sw | inst_beq | inst_bne | inst_blt | 
                 inst_bge | inst_bltu | inst_bgeu;
-//alu_sub
+//alu_sub 010
 assign alu_op[1] =  inst_sub | inst_slti | inst_sltiu | inst_slt | inst_sltu;
-//alu_xor
+//alu_xor 011
 assign alu_op[2] =  inst_xor | inst_xori;
-//alu_or
+//alu_or 100
 assign alu_op[3] =  inst_or  | inst_ori;
-//alu_and
+//alu_and 101
 assign alu_op[4] =  inst_and | inst_andi;
-//alu_srl
+//alu_srl 110
 assign alu_op[5] =  inst_srl | inst_srli;
-//alu_sll
+//alu_sll 111
 assign alu_op[6] =  inst_sll | inst_slli;
-//alu_sra
+//alu_sra 1000
 assign alu_op[7] =  inst_sra | inst_srai;
 
 // assign {imm[31:21],imm[19,13],imm[10,5]}=inst_R_type?{11'b0,7'b0,6'b0}:{inst[31:21],inst[19,13],inst[10,5]};
@@ -195,8 +207,6 @@ assign alu_op[7] =  inst_sra | inst_srai;
 // assign imm[4:1]=inst_S_type|inst_B_type?{inst[11:8]}:(inst_R_type?1'b0:inst[24:21]);
 // assign imm[0]=inst_S_type?inst[7]:(inst_R_type?1'b0:inst[20]);
 
-
-
 endmodule
 
 
@@ -205,9 +215,41 @@ module ysyx_24110026_excute(
     input rst,
     input [7:0] alu_op,
     input [31:0] rs1_data,
-    input [31:0] rs2_data
+    input [31:0] rs2_data,
+    output reg [31:0] alu_out
 );
 
+always@(*)begin
+    case (alu_op)
+        8'b00000001:begin//add
+            alu_out = rs1_data + rs2_data;
+        end
+        8'b00000010:begin//sub
+            alu_out = rs1_data - rs2_data;
+        end
+        8'b00000100:begin//xor
+            alu_out = rs1_data ^ rs2_data;
+        end
+        8'b00001000:begin//or
+            alu_out = rs1_data | rs2_data;
+        end
+        8'b00010000:begin//and
+            alu_out = rs1_data & rs2_data;
+        end
+        8'b00100000:begin//srl
+            alu_out = rs1_data >>> rs2_data;
+        end
+        8'b01000000:begin//sll
+            alu_out = rs1_data <<< rs2_data;
+        end
+        8'b10000000:begin//sra
+            alu_out = rs1_data >> rs2_data;
+        end
+        default:begin
+            alu_out = 32'b0;
+        end
+    endcase
+end
 
 
 endmodule

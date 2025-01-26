@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
     __TB__ = new TESTBENCH<Vysyx_24110026_top>(argc, argv);
     TB(sim_init());
     TB(sim_reset());
+    TB(DUT(inst) = 0x006101B3);
     TB(cycles(10));
 
     TB(~TESTBENCH());
