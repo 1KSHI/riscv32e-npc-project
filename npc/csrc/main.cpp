@@ -2,12 +2,28 @@
 #include <Vysyx_24110026_top.h>//user set
 
 TESTBENCH<Vysyx_24110026_top> *__TB__;
+//inst_type
+//R-type
+//000000000010 00001 000 00000 0010011
+
+uint32_t mem[64]={0x00208093,0x00308093,0x00408093,0x00508093};
+
+static uint32_t pmem_read(uint32_t addr) {
+  return mem[addr];
+}
+
 int main(int argc, char *argv[]) {
     __TB__ = new TESTBENCH<Vysyx_24110026_top>(argc, argv);
     TB(sim_init());
     TB(sim_reset());
-    TB(DUT(inst) = 0x006101B3);
-    TB(cycles(10));
+    TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
+    TB(cycles(1));
+    TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
+    TB(cycles(1));
+    TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
+    TB(cycles(1));
+    TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
+    TB(cycles(1));
 
     TB(~TESTBENCH());
     exit(EXIT_SUCCESS);
@@ -18,7 +34,7 @@ int main(int argc, char *argv[]) {
 
 // static Vysyx_24110026_top* top;//user set
 
-// uint32_t mem[64]={};
+
 
 // void step_and_dump_wave(){
 //   top->eval();
@@ -49,9 +65,7 @@ int main(int argc, char *argv[]) {
 //   top->rst = 0;
 // }
 
-// static uint32_t pmem_read(uint32_t addr) {
-//   return mem[addr];
-// }
+
 
 // void sim_exit(){
 

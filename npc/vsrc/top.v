@@ -4,30 +4,45 @@
 module ysyx_24110026_top(
     input clk,
     input rst,
-    input [31:0]inst
+    input [31:0]inst,
+    output reg [31:0] pc,
+    output pc_en
 );
+reg [31:0]pc_reg[31:0];
+
+always@(*)begin
+    pc_reg[0]=0;
+end
+
+integer i;
+always@(posedge clk)begin
+    if(rst)begin
+        for(i=0;i<32;i=i+1)begin
+            pc_reg[i]=0;
+        end
+    end else begin
+        pc_reg[rd_addr]=alu_out;
+    end
+end
+
+wire [31:0][31:0]pc_reg_rd_wire;
+genvar j;
+for(j=0;j<32;j=j+1)begin
+    assign pc_reg_rd_wire[j]=pc_reg[j];
+end
+
+
 //pc
-reg [31:0] pc;
 wire pc_ctrl;
 wire [31:0] pc_sta;
 wire [31:0] pc_beq;
 wire [31:0] pc_dyn;
 //reg_stack
-reg rs1;
-reg rs2;
-reg rd;
-wire wr_rd_ctrl;
-wire [31:0] wr_data_in;
-wire [31:0] rd_data_out_1;
-wire [31:0] rd_data_out_2;
+wire [4:0] rd_addr;
 
 always@(posedge clk)begin
-    if(rst)begin
-        pc<=32'h80000000;
-    end
-    else begin
-        pc<=pc_dyn;
-    end
+    if(rst) pc<=32'h80000000;
+    else pc<=pc_dyn;
 end
 
 assign pc_dyn=pc_ctrl?pc_beq:pc_sta;
@@ -51,7 +66,9 @@ ysyx_24110026_decoder ysyx_24110026_decoder(
     .rs1_data(rs1_data),
     .rs2_data(rs2_data),
     .branch_offset(branch_offset),
-    .jump_offset(jump_offset)
+    .jump_offset(jump_offset),
+    .pc_reg_wire(pc_reg_rd_wire),
+    .rd_addr(rd_addr)
 );
 
 ysyx_24110026_excute ysyx_24110026_excute(
@@ -70,35 +87,59 @@ module ysyx_24110026_decoder(
     input clk,
     input rst,
     input [31:0] inst,
+    input [31:0][31:0] pc_reg_wire,
     output inst_type,
     output [7:0] alu_op,
     output [31:0] rs1_data,
     output [31:0] rs2_data,
     output [31:0] branch_offset,
-    output [31:0] jump_offset
+    output [31:0] jump_offset,
+    output [4:0] rd_addr
 );
+wire [31:0] pc_reg[31:0];
 
+genvar i;
+for(i=0;i<32;i=i+1)begin
+    assign pc_reg[i]=pc_reg_wire[i];
+end
+
+
+
+reg [31:0] id_inst;
+always @(posedge clk) begin
+    if(rst)begin
+        id_inst<=0;
+    end else begin
+        id_inst<=inst;
+    end
+end
 wire [2:0] op_ctrl;
-wire [6:0] opcode = inst[6:0];
-wire [4:0] rs1_addr = inst[19:15];
-wire [4:0] rs2_addr = inst[24:20];
-wire [4:0] rd_addr = inst[11:7];
-wire [2:0] funct3 = inst[14:12];
-wire [6:0] funct7 = inst[31:25];
-assign rs1_data={27'b0,rs1_addr};
-assign rs2_data={27'b0,rs2_addr};
+wire [6:0] opcode = id_inst[6:0];
+wire [4:0] rs1_addr = id_inst[19:15];
+wire [4:0] rs2_addr = id_inst[24:20];
+assign rd_addr = id_inst[11:7];
+wire [2:0] funct3 = id_inst[14:12];
+wire [6:0] funct7 = id_inst[31:25];
+// assign rs1_data={27'b0,rs1_addr};
+// assign rs2_data={27'b0,rs2_addr};
 
-wire [31:0] imm_i = {inst[31]?20'b1:20'b0,inst[31:20]};
-wire [31:0] imm_s = {inst[31]?20'b1:20'b0,inst[31:25],inst[11:7]};
-wire [31:0] imm_b = {inst[31]?19'b1:19'b0,inst[31],inst[7],inst[30:25],inst[11:8],1'b0};
-wire [31:0] imm_u = {inst[31:12],12'b0};
-wire [31:0] imm_j = {inst[31]?11'b1:11'b0,inst[31],inst[19:12],inst[20],inst[30:21],1'b0};
+wire [31:0] imm_i = {id_inst[31]?20'b1:20'b0,id_inst[31:20]};
+wire [31:0] imm_s = {id_inst[31]?20'b1:20'b0,id_inst[31:25],id_inst[11:7]};
+wire [31:0] imm_b = {id_inst[31]?19'b1:19'b0,id_inst[31],id_inst[7],id_inst[30:25],id_inst[11:8],1'b0};
+wire [31:0] imm_u = {id_inst[31:12],12'b0};
+wire [31:0] imm_j = {id_inst[31]?11'b1:11'b0,id_inst[31],id_inst[19:12],id_inst[20],id_inst[30:21],1'b0};
 
-// case {inst_I_type,inst_S_type,inst_U_type}
-//     3'b001:assign rs2_data=imm_i;
-//     3'b010:assign rs2_data=imm_s;
-//     3'b100:assign rs2_data=imm_u;
-// endcase
+reg [31:0]rs2_data_temp;
+always@(*)begin
+    case ({inst_U_type,inst_S_type,inst_I_type})
+        3'b001:rs2_data_temp=imm_i;
+        3'b010:rs2_data_temp=imm_s;
+        3'b100:rs2_data_temp=imm_u;
+        default:rs2_data_temp=pc_reg[rs2_addr];
+    endcase
+end
+assign rs2_data=rs2_data_temp;
+assign rs1_data=pc_reg[rs1_addr];
 
 // always@(*)begin
 //     if(inst_I_type)rs2_data=imm_i;
@@ -115,13 +156,12 @@ wire inst_lui   = opcode[6:2]==`LUI_OP;//01101
 wire inst_auipc = opcode[6:2]==`AUIPC_OP;//00101
 wire inst_jal   = opcode[6:2]==`JAL_OP;//11011
 wire inst_jalr  = opcode[6:2]==`JALR_OP;//11001
-wire inst_J_type = inst_jal;
-wire inst_U_type = inst_lui | inst_auipc;
-
 wire inst_load   = (opcode[6:2]==`LOAD_OP)&&(opcode[1:0]==2'b11);//00000
 wire inst_ebreak = opcode[6:2]==`EBREAK_OP;//11100
 wire inst_fence  = opcode[6:2]==`FENCE_OP;//00011
 
+wire inst_J_type = inst_jal;
+wire inst_U_type = inst_lui | inst_auipc;
 wire inst_R_type = opcode[6:2]==`R_TYPE_OP;//01100
 wire inst_B_type = opcode[6:2]==`B_TYPE_OP;//11000
 wire inst_S_type = opcode[6:2]==`S_TYPE_OP;//01000
