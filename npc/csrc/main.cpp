@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
     TB(cycles(1));
     TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
-    TB(cycles(1));
+    TB(cycles(10));
 
     TB(~TESTBENCH());
     exit(EXIT_SUCCESS);
