@@ -34,6 +34,10 @@ NEMU_EXEC := $(BINARY) $(ARGS) $(IMG)
 run-env: $(BINARY) $(DIFF_REF_SO)
 
 run: run-env
+	@echo "AM_HOME=$(AM_HOME)"
+	@echo "NEMU_HOME=$(NEMU_HOME)"
+	@echo "SRCS=$(SRCS)"
+	@echo "CONFIG_TARGET_AM=$(CONFIG_TARGET_AM)"
 	$(call git_commit, "run NEMU")
 	$(NEMU_EXEC)
 
