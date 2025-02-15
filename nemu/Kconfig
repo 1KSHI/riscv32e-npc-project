@@ -147,9 +147,14 @@ config ITRACE
   default y
 
 config ITRACE_COND
-  depends on ITRACE
+  depends on ITRACE && !IRINGBUF_COND
   string "Only trace instructions when the condition is true"
   default "true"
+
+config IRINGBUF_COND
+  depends on ITRACE
+  bool "Enable ring buffer"
+  default "false"
 
 config CONFIG_WATCHPOINT
   bool "Enable watchpoint"
