@@ -156,6 +156,11 @@ config IRINGBUF_COND
   bool "Enable ring buffer"
   default "false"
 
+config MTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER && !ITRACE
+  bool "Enable memory tracer"
+  default n
+
 config CONFIG_WATCHPOINT
   bool "Enable watchpoint"
   default "true"
