@@ -146,7 +146,7 @@ assign alu_op[6] =  inst_sll | inst_slli;
 //alu_sra 1000
 assign alu_op[7] =  inst_sra | inst_srai;
 
-always@(clk)begin
+always@(posedge clk)begin
     if(inst_ebreak)begin
         ebreak();
     end

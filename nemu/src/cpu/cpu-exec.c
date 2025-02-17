@@ -31,6 +31,8 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
+void device_update();
+
 typedef struct {
     char buffer[RINGBUF_SIZE][133];
     int head;
@@ -39,8 +41,6 @@ typedef struct {
 } RingBuffer;
 
 RingBuffer ringbuf = { .head = 0, .tail = 0, .count = 0 };
-
-void device_update();
 
 void ringbuf_write(const char *logbuf) {
     if (ringbuf.count == RINGBUF_SIZE) {
@@ -55,12 +55,7 @@ void ringbuf_write(const char *logbuf) {
     ringbuf.head = (ringbuf.head + 1) % RINGBUF_SIZE;
 }
 
-static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
-#ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-#endif
-
-#ifdef CONFIG_IRINGBUF_COND
+void iring_check(Decode *_this){
   char formatted_logbuf[133];
   if(nemu_state.state == NEMU_ABORT || nemu_state.halt_ret != 0){
     snprintf(formatted_logbuf, sizeof(formatted_logbuf), "---> %s", _this->logbuf);
@@ -72,6 +67,15 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
     snprintf(formatted_logbuf, sizeof(formatted_logbuf), "     %s", _this->logbuf);
     ringbuf_write(formatted_logbuf);
   }
+}
+
+static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
+#ifdef CONFIG_ITRACE_COND
+  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+#endif
+
+#ifdef CONFIG_IRINGBUF_COND
+  iring_check(_this);
 #endif
 
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }

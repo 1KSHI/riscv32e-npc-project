@@ -13,8 +13,8 @@ static uint32_t pmem_read(uint32_t addr) {
 }
 
 extern "C" void ebreak() {
-  TB(~TESTBENCH());
-  exit(EXIT_SUCCESS);
+    TB(~TESTBENCH());
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]) {
