@@ -18,6 +18,13 @@
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
 
+#define CALL 0
+#define RET 1
+
+#ifdef CONFIG_FTRACE
+void add_ftrace(vaddr_t pc, int type, vaddr_t address);
+#endif
+
 #define R(i) gpr(i)
 #define Mr vaddr_read
 #define Mw vaddr_write
@@ -51,6 +58,20 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     default: panic("unsupported type = %d", type);
   }
 }
+
+#ifdef CONFIG_FTRACE
+// static void identity_cal_ret(const char *name, Decode *s) {
+//     if (strcmp("jal", name) == 0)
+//         add_ftrace(s->pc, CALL, s->dnpc);
+//     if (strcmp("jalr", name) == 0) {
+//         int rs1 = BITS(s->isa.inst.val, 19, 15);
+//         if (rs1 == 1)
+//             add_ftrace(s->pc, RET, s->dnpc);
+//         else
+//             add_ftrace(s->pc, CALL, s->dnpc);
+//     }
+// }
+#endif
 
 static int decode_exec(Decode *s) {
   s->dnpc = s->snpc;
