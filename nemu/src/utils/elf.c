@@ -91,5 +91,24 @@ void read_sections() {
             assert(n == 1);
         }
     }
+    // Print the symtab content in hexadecimal format
+    printf("symtab content in hexadecimal:\n");
+    for (size_t i = 0; i < SYMTAB_SIZE; i++) {
+        printf("%02x ", ((unsigned char*)symtab)[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
+    // // Print the strtab content in hexadecimal format
+    // printf("strtab content in hexadecimal:\n");
+    // for (size_t i = 0; i < STRTAB_SIZE; i++) {
+    //     printf("%02x ", ((unsigned char*)strtab)[i]);
+    //     if ((i + 1) % 16 == 0) {
+    //         printf("\n");
+    //     }
+    // }
+    // printf("\n");
 }
 
