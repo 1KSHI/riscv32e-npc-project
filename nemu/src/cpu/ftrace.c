@@ -40,8 +40,7 @@ void add_ftrace(vaddr_t pc, int type, vaddr_t des_address) {
 
     //map the address into a string
     for (int i = 0; i < sym_num; i ++) {
-        if ((type == CALL && symtab[i].st_value == address) ||
-            (type == RET && (symtab[i].st_value <= address && address < symtab[i].st_value + symtab[i].st_size))) {
+        if (symtab[i].st_info==0x12 && ((type == CALL && symtab[i].st_value == address) || (type == RET && (symtab[i].st_value <= address && address < symtab[i].st_value + symtab[i].st_size)))) {
             // printf("symtab[%d].st_value = 0x%x\n", i, symtab[i].st_value);
             sprintf(name, "%s", strtab + symtab[i].st_name);
             break;

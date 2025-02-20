@@ -92,14 +92,17 @@ void read_sections() {
         }
     }
     // Print the symtab content in hexadecimal format
-    printf("symtab content in hexadecimal:\n");
-    for (size_t i = 0; i < SYMTAB_SIZE; i++) {
-        printf("%02x ", ((unsigned char*)symtab)[i]);
-        if ((i + 1) % 16 == 0) {
-            printf("\n");
-        }
-    }
-    printf("\n");
+    // printf("symtab content in hexadecimal:\n");
+    // for (int i = 0; i < 40; i++) {
+        // printf("symtab[%d].st_value = 0x%x    ", i, symtab[i].st_value);
+        // printf("symtab[%d].st_info = 0x%x    ", i, symtab[i].st_info);
+        // printf("symtab[%d].st_name = 0x%x\n", i, symtab[i].st_name);
+        // printf("%02x ", ((unsigned char*)symtab)[i]);
+        // if ((i + 1) % 16 == 0) {
+        //     printf("\n");
+        // }
+    // }
+    // printf("\n");
 
     // // Print the strtab content in hexadecimal format
     // printf("strtab content in hexadecimal:\n");
