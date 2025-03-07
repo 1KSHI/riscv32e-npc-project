@@ -1,9 +1,18 @@
+#verilator export
 VERILATOR = $(VERILATOR_ROOT)/bin/verilator
-#yosys-sta define:
+
+
+#vivado tcl define
+VIVADO = vivado
+TCL_SCRIPT = $(DESIGN).tcl
+PROJECT_NAME = rtl_simulation
+VIVADO_PROJECT_NAME = vivado_sim
+
+#yosys-sta define
 LIB_PATH = $(PROJ_PATH)/yosys
 
 DESIGN ?= ysyx_24110026_top
-SDC_FILE ?= $(PROJ_PATH)/sdc/top.sdc
+SDC_FILE ?= $(PROJ_PATH)/sdc/$(DESIGN).sdc
 RTL_FILES ?= $(shell find $(PROJ_PATH)/vsrc -name "*.v")
 export CLK_FREQ_MHZ ?= 500
 
@@ -14,47 +23,48 @@ NETLIST_FIXED_V = $(RESULT_DIR)/$(DESIGN).netlist.fixed.v
 TIMING_RPT = $(RESULT_DIR)/$(DESIGN).rpt
 
 
-#verilator define:
-TOPNAME = ysyx_24110026_top
-INC_PATH = $(OBJ_DIR)
-
+#verilator define
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
-BIN = $(BUILD_DIR)/$(TOPNAME)
+INC_PATH = $(OBJ_DIR)
+BIN = $(BUILD_DIR)/$(DESIGN)
 
 PROJ_PATH = $(shell pwd)
 
 # rules for verilator
 INCFLAGS = $(addprefix -I, $(INC_PATH))
-CXXFLAGS += $(INCFLAGS) -DTOP_NAME="\"V$(TOPNAME)\""
+CXXFLAGS += $(INCFLAGS) -DTOP_MODULE="\"V$(DESIGN)\""
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc --trace -j -O3 --x-assign fast --x-initial fast --noassert
 
-# project source
-VSRCS = $(shell find $(abspath ./vsrc) -name "*.v")
-CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
-CSRCS += $(SRC_AUTO_BIND)
 
-$(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
+# project source
+VSRCS = $(shell find $(abspath ./vsrc) -name "*.v" -not -path "$(abspath ./vsrc/tb)/*")
+CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
+
+$(BIN): $(VSRCS) $(CSRCS)
 	@rm -rf $(OBJ_DIR)
 
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
-		--top-module $(TOPNAME) $^ \
+		--top-module $(DESIGN) $^ \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN))
 
 default: $(BIN)
 $(shell mkdir -p $(BUILD_DIR))
 
-# wave sim
+
+# wave simulation
 wave: $(BIN)
 	@$(BIN)
 # gtkwave dump.vcd
 
+# vivado simulation
+vivado:
+	$(VIVADO) -mode batch -source $(TCL_SCRIPT)
 
-# init:
-# 	bash -c "$$(wget -O - https://ysyx.oscc.cc/slides/resources/scripts/init-yosys-sta.sh)"
 
+#yosys simulation
 syn: $(NETLIST_SYN_V)
 $(NETLIST_SYN_V): $(RTL_FILES) $(SCRIPT_DIR)/yosys.tcl
 	mkdir -p $(@D)
@@ -68,10 +78,15 @@ sta: $(TIMING_RPT)
 $(TIMING_RPT): $(SCRIPT_DIR)/sta.tcl $(SDC_FILE) $(NETLIST_FIXED_V)
 	$(LIB_PATH)/bin/iEDA -script $^ $(DESIGN) 2>&1 | tee $(RESULT_DIR)/sta.log
 
+
 clean:
 	rm -rf $(BUILD_DIR) *.log *.dmp *.vpd core
+	-rm -rf $(VIVADO_PROJECT_NAME) $(PROJECT_NAME).runs $(PROJECT_NAME).sim $(PROJECT_NAME).cache $(PROJECT_NAME).hw $(PROJECT_NAME).ip_user_files $(PROJECT_NAME).xpr *.jou *.log *.str
 	-rm -rf $(LIB_PATH)/result/
-	-rm *.vcd
+	-rm -rf vivado*.log vivado*.jou
+	-rm -rf .Xil/ .cache/ .sim/
+	-rm -rf ./reports ./prj ./user
+	-rm *.vcd *.view
 
 .PHONY: init syn fix-fanout sta clean
 

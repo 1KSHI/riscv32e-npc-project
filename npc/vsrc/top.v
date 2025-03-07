@@ -1,4 +1,4 @@
-`include "./vsrc/defines.v"
+`include "defines.v"
 
 
 module ysyx_24110026_top(

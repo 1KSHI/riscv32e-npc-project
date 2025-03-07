@@ -1,4 +1,4 @@
-`include "./vsrc/defines.v"
+`include "defines.v"
 import "DPI-C" function void ebreak();
 
 module ysyx_24110026_decoder(
