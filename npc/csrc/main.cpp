@@ -21,14 +21,16 @@ extern "C" void ebreak() {
 int main(int argc, char *argv[]) {
     __TB__ = new TESTBENCH<Vysyx_24110026_top>(argc, argv);
     TB(sim_init());
+    TB(DUT(clk)=0);
     TB(sim_reset());
     npc_init(argc, argv);
-    for(int i=0;i<10;i++){
-        TB(DUT(inst) = pmem_read((TB(DUT(pc))-0x80000000)/4));
+    for(int i=0;i<20;i++){
+        TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
         TB(cycles(1));
     }
-    TB(cycles(10));
+    TB(cycles(100));
 
     
-    //exit(EXIT_SUCCESS);
+    TB(~TESTBENCH());
+    exit(EXIT_SUCCESS);
 }

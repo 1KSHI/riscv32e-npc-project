@@ -37,7 +37,7 @@ wire [31:0] branch_offset;
 wire [31:0] jump_offset;
 wire [31:0] alu_out;
 
-ysyx_24110026_regfile regfile(
+regf regf(
     .clk(clk),
     .rst(rst),
     .en(1'b1),
@@ -49,7 +49,7 @@ ysyx_24110026_regfile regfile(
     .rs2_data(rs2_data_reg_id)
 );  
 
-ysyx_24110026_decoder decoder(
+idu idu(
     .clk(clk),
     .rst(rst),
     .inst(inst),
@@ -67,7 +67,7 @@ ysyx_24110026_decoder decoder(
     .rd_addr(rd_addr)
 );
 
-ysyx_24110026_excute excute(
+exu exu(
     .clk(clk),
     .rst(rst),
     .alu_op(alu_op),
