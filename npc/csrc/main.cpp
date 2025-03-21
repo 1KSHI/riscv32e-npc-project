@@ -4,7 +4,7 @@
 
 bool system_exit  = false;
 bool good_trap    = false;
-
+int count         = 0;
 TESTBENCH<Vtop> *__TB__;
 //inst_type
 //R-type
@@ -16,9 +16,13 @@ static uint32_t pmem_read(uint32_t addr) {
   return mem[addr];
 }
 
-extern "C" void ebreak() {
-    TB(~TESTBENCH());
-    exit(EXIT_SUCCESS);
+static void watch_dog() {
+    count++;
+    if (count > 100) {
+        printf("watch dog timeout\n");
+        TB(~TESTBENCH());
+        exit(EXIT_FAILURE);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -28,8 +32,9 @@ int main(int argc, char *argv[]) {
     TB(sim_reset());
     npc_init(argc, argv);
     while (!system_exit) {
-        printf("pc:%x\n",TB(DUT(pc)));
         TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
+        printf("pc:%x\n",TB(DUT(pc)));
+        watch_dog();
         TB(cycles(1));
     }  
     switch(good_trap){

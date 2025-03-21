@@ -19,7 +19,7 @@ NETLIST_FIXED_V = $(RESULT_DIR)/$(TOP_MODULE).netlist.fixed.v
 TIMING_RPT = $(RESULT_DIR)/$(TOP_MODULE).rpt
 
 # 3.run info: 
-IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv32-nemu.bin	# program img, run on npc.
+IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv32e-npc.bin	# program img, run on npc.
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 INC_PATH = $(OBJ_DIR)
