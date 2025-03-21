@@ -9,23 +9,33 @@ module ysyx_24110026_top(
     output pc_en
 );
 //pc
-wire pc_ctrl;
 wire [31:0] pc_sta;
-wire [31:0] pc_beq;
+reg  [31:0] pc_beq;
 wire [31:0] pc_dyn;
-
+wire [1:0]  jump_ctrl;
+wire [31:0] jump_pc=pc+4;
+wire jump_en=(jump_ctrl!=0);
 
 always@(posedge clk)begin
     if(rst) pc<=32'h80000000;
     else pc<=pc_dyn;
 end
 
-assign pc_dyn=pc_ctrl?pc_beq:pc_sta;
+assign pc_dyn=jump_en?pc_beq:pc_sta;
+
+always@(*)begin
+    case(jump_ctrl)
+        2'b00:pc_beq=32'b0;
+        2'b01:pc_beq=32'b0;
+        2'b10:pc_beq=alu_out;
+        2'b11:pc_beq=(alu_out)&~1;
+        default:pc_beq=32'b0;
+    endcase
+end
 
 assign pc_sta=pc+4;
 
-wire inst_type;
-wire [7:0]alu_op;
+wire [3:0]alu_op;
 wire [4:0] rd_addr;
 wire [31:0] rs1_data_reg_id;
 wire [31:0] rs2_data_reg_id;
@@ -44,7 +54,7 @@ regf regf(
     .rs1_addr(rs1_addr),
     .rs2_addr(rs2_addr),
     .waddr(rd_addr),
-    .wdata(alu_out),
+    .wdata(jump_en?jump_pc:alu_out),
     .rs1_data(rs1_data_reg_id),
     .rs2_data(rs2_data_reg_id)
 );  
@@ -56,8 +66,8 @@ idu idu(
     .pc(pc),
     .rs1_data_in(rs1_data_reg_id),
     .rs2_data_in(rs2_data_reg_id),
-    .inst_type(inst_type),
     .alu_op(alu_op),
+    .jump_ctrl(jump_ctrl),
     .rs1_addr(rs1_addr),
     .rs2_addr(rs2_addr),
     .rs1_data_out(rs1_data_id_ex),

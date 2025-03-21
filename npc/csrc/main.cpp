@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     TB(sim_reset());
     npc_init(argc, argv);
     for(int i=0;i<20;i++){
+        printf("pc:%x\n",TB(DUT(pc)));
         TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
         TB(cycles(1));
     }
