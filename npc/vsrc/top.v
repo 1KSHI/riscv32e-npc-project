@@ -1,12 +1,14 @@
 `include "defines.v"
+import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
 
 
-module ysyx_24110026_top(
+module top(
     input clk,
     input rst,
     input [31:0]inst,
     output reg [31:0] pc,
-    output pc_en
+    output pc_en,
+    output [31:0] s_regs [`REG_NUM-1:0]
 );
 //pc
 wire [31:0] pc_sta;
@@ -15,10 +17,15 @@ wire [31:0] pc_dyn;
 wire [1:0]  jump_ctrl;
 wire [31:0] jump_pc=pc+4;
 wire jump_en=(jump_ctrl!=0);
+wire s_a0zero;
 
 always@(posedge clk)begin
     if(rst) pc<=32'h80000000;
     else pc<=pc_dyn;
+end
+
+always @(*) begin
+  check_finsih(inst,s_a0zero);
 end
 
 assign pc_dyn=jump_en?pc_beq:pc_sta;
@@ -56,7 +63,9 @@ regf regf(
     .waddr(rd_addr),
     .wdata(jump_en?jump_pc:alu_out),
     .rs1_data(rs1_data_reg_id),
-    .rs2_data(rs2_data_reg_id)
+    .rs2_data(rs2_data_reg_id),
+    .s_regs(s_regs),
+    .s_a0zero(s_a0zero)
 );  
 
 idu idu(

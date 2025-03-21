@@ -4,7 +4,7 @@ VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 # 1.files info:
 VSRCS += $(shell find $(abspath ./vsrc) -name "*.v" -not -path "$(abspath ./vsrc/tb)/*")
 CSRCS += $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
-TOP_MODULE ?= ysyx_24110026_top
+TOP_MODULE ?= top
 
 # 2.yosys-sta info：
 PROJ_PATH = $(shell pwd)
@@ -28,7 +28,7 @@ RUN_FLAG = --img=${IMG}
 NPC_EXEC = $(BIN) $(RUN_FLAG)
 
 # 4.verilator flags:
-INCFLAGS = $(addprefix -I, $(INC_PATH)) -I$(abspath ./csrc/include) -I$(abspath ./csrc/include/memory)
+INCFLAGS = $(addprefix -I, $(INC_PATH)) $(addprefix -I, ./vsrc) -I$(abspath ./csrc/include) -I$(abspath ./csrc/include/memory)
 CXXFLAGS += $(INCFLAGS) -DTOP_MODULE="\"V$(TOP_MODULE)\""
 VERILATOR_CFLAGS += -MMD --build -cc --trace -j -O3 --x-assign fast --x-initial fast --noassert
 
@@ -61,6 +61,10 @@ sta: $(TIMING_RPT)
 $(TIMING_RPT): $(SCRIPT_DIR)/sta.tcl $(SDC_FILE) $(NETLIST_FIXED_V)
 	$(LIB_PATH)/bin/iEDA -script $^ $(TOP_MODULE) 2>&1 | tee $(RESULT_DIR)/sta.log
 
+# yosys simulation
+yos: MODULE ?= exu
+yos:
+	yowasp-yosys -p "read_verilog -sv ./vsrc/$(MODULE).v; hierarchy -top $(MODULE); proc; flatten; show -format dot -prefix $(MODULE); stat"
 
 clean:
 	rm -rf $(BUILD_DIR) *.log *.dmp *.vpd core
@@ -68,6 +72,7 @@ clean:
 	-rm -rf $(LIB_PATH)/result/
 	-rm -rf ./reports ./prj ./user
 	-rm *.vcd *.view
+	-rm *.dot
 
 .PHONY: init syn fix-fanout sta clean
 

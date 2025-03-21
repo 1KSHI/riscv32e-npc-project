@@ -1,8 +1,11 @@
 #include "include/tb_common.h"
-#include <Vysyx_24110026_top.h>//user set
+#include <Vtop.h>//user set
 #include "include/include.h"
 
-TESTBENCH<Vysyx_24110026_top> *__TB__;
+bool system_exit  = false;
+bool good_trap    = false;
+
+TESTBENCH<Vtop> *__TB__;
 //inst_type
 //R-type
 //000000000010 00001 000 00000 0010011
@@ -19,19 +22,20 @@ extern "C" void ebreak() {
 }
 
 int main(int argc, char *argv[]) {
-    __TB__ = new TESTBENCH<Vysyx_24110026_top>(argc, argv);
+    __TB__ = new TESTBENCH<Vtop>(argc, argv);
     TB(sim_init());
     TB(DUT(clk)=0);
     TB(sim_reset());
     npc_init(argc, argv);
-    for(int i=0;i<20;i++){
+    while (!system_exit) {
         printf("pc:%x\n",TB(DUT(pc)));
         TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
         TB(cycles(1));
+    }  
+    switch(good_trap){
+    case 1: printf("\n----------EBREAK: HIT !! GOOD !! TRAP!!---------------\n\n"); break;
+    case 0: printf("\n----------EBREAK: HIT !! BAD  !! TRAP!!---------------\n\n"); break;
     }
-    TB(cycles(100));
-
-    
     TB(~TESTBENCH());
     exit(EXIT_SUCCESS);
 }
