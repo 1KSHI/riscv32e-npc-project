@@ -36,6 +36,7 @@ CXXFLAGS += $(INCFLAGS) -DTOP_MODULE="\"V$(TOP_MODULE)\""
 VERILATOR_CFLAGS += -MMD --build -cc --trace -j -O3 --x-assign fast --x-initial fast --noassert
 VERILATOR_CFLAGS += -I${SEARCHPATH}
 VERILATOR_CFLAGS += -DSIMULATION
+LDFLAGS += -lreadline
 
 .PHONY:run gdb wave clean
 

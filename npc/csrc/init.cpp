@@ -5,6 +5,7 @@ char *img_file = NULL;
 
 static int parse_args(int argc, char *argv[]);
 static long load_img(char *img_file);
+void init_sdb();
 
 void npc_init(int argc, char *argv[]) {
   // Parse arguments.
@@ -12,6 +13,8 @@ void npc_init(int argc, char *argv[]) {
 
   // /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img(img_file);
+
+  init_sdb();
 
 }
 

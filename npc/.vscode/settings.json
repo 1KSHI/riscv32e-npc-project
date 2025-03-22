@@ -5,6 +5,7 @@
 	"files.associations": {
 		"regex.h": "c",
 		"include.h": "c",
-		"paddr.h": "c"
+		"paddr.h": "c",
+		"ratio": "cpp"
 	}
 }

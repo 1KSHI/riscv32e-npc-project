@@ -1,5 +1,7 @@
 #include <regex.h>
 #include <memory/paddr.h>
+#include "include.h"
+
 enum {
   TK_NOTYPE = 256, TK_HEX,TK_NEGATIVE,TK_DECIMAL,TK_EQ,TK_NEQ,TK_AND,TK_REG,DEREF
 
@@ -107,7 +109,7 @@ static int eval(int p, int q) {
         return (unsigned int)strtol(tokens[p].str, NULL, 0);
       case TK_REG: {
         bool success = true;
-        word_t result = isa_reg_str2val(tokens[p].str + 1, &success);
+        word_t result = reg_str2val(tokens[p].str + 1, &success);
         if (success) {
           return result;
         } else {

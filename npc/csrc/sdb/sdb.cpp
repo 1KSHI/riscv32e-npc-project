@@ -8,48 +8,9 @@
 #include <string.h>
 
 static int is_batch_mode = false;
-extern npc_s npc_state;
+extern NPC_state npc_state;
 void init_regex();
 void init_wp_pool();
-
-
-
-void test_expr_from_file(const char *filename) {
-  FILE *file = fopen(filename, "r");
-  if (!file) {
-    perror("Failed to open file");
-    return;
-  }
-
-  char line[256];
-  int count[2] = {0, 0};
-  while (fgets(line, sizeof(line), file)) {
-    int expected_result;
-    char expression[256];
-
-    if (sscanf(line, "%d %[^\n]", &expected_result, expression) != 2) {
-      fprintf(stderr, "Failed to parse line: %s", line);
-      continue;
-    }
-
-    bool success = true;
-    int result = expr(expression, &success);
-
-    if (!success) {
-      printf("Failed to evaluate expression: %s\n", expression);
-    } else if (result == expected_result) {
-      printf("PASS: %s = %d\n", expression, result);
-      count[0]++;
-    } else {
-      printf("FAIL: %s, expected %d but got %d\n", expression, expected_result, result);
-      count[1]++;
-    }
-  }
-  int total = count[0] + count[1];
-  printf("Total: %d, Correct: %d, Wrong: %d\n", total, count[0], count[1]);
-
-  fclose(file);
-}
 
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
@@ -61,7 +22,7 @@ static char* rl_gets() {
     line_read = NULL;
   }
 
-  line_read = readline("(nemu) ");
+  line_read = readline("(npc) ");
 
   if (line_read && *line_read) {
     add_history(line_read);
@@ -93,9 +54,9 @@ static int cmd_info(char *args) {
   } else if (strcmp(arg, "r") == 0) {
     arg = strtok(NULL, " ");
     if(arg == NULL){
-      isa_reg_display();
+      print_regs(true);
     }else{
-      isa_reg_display_one(arg);
+      print_one_regs(arg);
     }
   } else if (strcmp(arg, "w") == 0) {
     watchpoint_display();
@@ -131,9 +92,6 @@ static int cmd_p(char *args) {
     if (arg == NULL) {
       printf("Unknown command 'e' without arguments\n");
       return 0;
-    } else if(strcmp(arg, "test") == 0) {
-      printf("Test expression \n");
-      test_expr_from_file("/tmp/input");
     } else {
       bool success = true;
       result = expr(arg, &success);
