@@ -1,0 +1,5 @@
+{
+    "verilog.linting.linter": "verilator",
+	"digital-ide.function.lsp.linter.verilog.diagnostor": "verilator",
+	"digital-ide.function.lsp.linter.systemverilog.diagnostor": "verilator"
+}
