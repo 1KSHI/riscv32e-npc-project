@@ -24,6 +24,26 @@ typedef struct {
   uint32_t csr[4];
 } regfile;
 
+
+
+enum npc_state_t{
+  NPC_QUIT = 0,
+  NPC_RUNNING,
+  NPC_STOP,
+  NPC_END,
+  NPC_ABORT
+};
+
+enum npc_trap_t{
+  GOOD_TRAP = 0,
+  BAD_TRAP
+};
+
+typedef struct {
+  npc_state_t state;
+  npc_trap_t trap;
+} npc_s;
+
 void npc_init(int argc, char *argv[]);
 void print_regs();
 

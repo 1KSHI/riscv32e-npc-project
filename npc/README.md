@@ -6,8 +6,8 @@ File structure:
   └── tb_common.h       ----- verilator头文件
 
 /sdc                -----约束文件夹
-  ├── *.sdc             ----- yosys时序约束文件
-  └── *.xdc             ----- vivado时序约束文件
+  └── *.sdc             ----- yosys时序约束文件
+
 
 /vsrc               ----- verilog文件夹
   ├── /tb               ----- testbench文件夹
@@ -19,8 +19,8 @@ File structure:
   ├── /nangate45
   └── /scripts
 
-├── Makefile
-└── *.tcl               ----- vivado tcl脚本
+└── Makefile
+
 ```
 
 How to use?
@@ -28,13 +28,13 @@ How to use?
 make clean
 删除临时文件
 
-make wave
+make run
 verilator rtl波形仿真
 
 make sta
 yosys 45nm工艺库综合
 
-make vivado
-vivado rtl波形仿真、综合、约束
+make yos MODULE="module name"
+yosys 综合生成连接图
 
 ```

@@ -3,7 +3,6 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
                 "./build/obj_dir/**",
                 "./csrc/include/**",
                 "./csrc/include/memory/**",

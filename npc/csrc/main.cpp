@@ -2,8 +2,8 @@
 #include <Vtop.h>//user set
 #include "include/include.h"
 
-bool system_exit  = false;
-bool good_trap    = false;
+npc_s npc_state = {NPC_RUNNING,BAD_TRAP};
+
 int count         = 0;
 TESTBENCH<Vtop> *__TB__;
 //inst_type
@@ -31,15 +31,15 @@ int main(int argc, char *argv[]) {
     TB(DUT(clk)=0);
     TB(sim_reset());
     npc_init(argc, argv);
-    while (!system_exit) {
+    while (npc_state.state == NPC_RUNNING) {
         TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
         print_regs();
         watch_dog();
         TB(cycles(1));
     }  
-    switch(good_trap){
-    case 1: printf("\n----------EBREAK: HIT !! GOOD !! TRAP!!---------------\n\n"); break;
-    case 0: printf("\n----------EBREAK: HIT !! BAD  !! TRAP!!---------------\n\n"); break;
+    switch(npc_state.trap) {
+    case GOOD_TRAP: printf("\n----------EBREAK: HIT !! GOOD !! TRAP!!---------------\n\n"); break;
+    case BAD_TRAP: printf("\n----------EBREAK: HIT !! BAD  !! TRAP!!---------------\n\n"); break;
     }
     TB(~TESTBENCH());
     exit(EXIT_SUCCESS);
