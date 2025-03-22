@@ -1,14 +1,14 @@
 `include "defines.v"
+`ifdef SIMULATION
 import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
-
+`endif
 
 module top(
     input clk,
     input rst,
     input [31:0]inst,
     output reg [31:0] pc,
-    output pc_en,
-    output [31:0] s_regs [`REG_NUM-1:0]
+    output pc_en
 );
 //pc
 wire [31:0] pc_sta;
@@ -24,9 +24,11 @@ always@(posedge clk)begin
     else pc<=pc_dyn;
 end
 
+`ifdef SIMULATION
 always @(*) begin
   check_finsih(inst,s_a0zero);
 end
+`endif
 
 assign pc_dyn=jump_en?pc_beq:pc_sta;
 
@@ -64,7 +66,6 @@ regf regf(
     .wdata(jump_en?jump_pc:alu_out),
     .rs1_data(rs1_data_reg_id),
     .rs2_data(rs2_data_reg_id),
-    .s_regs(s_regs),
     .s_a0zero(s_a0zero)
 );  
 
