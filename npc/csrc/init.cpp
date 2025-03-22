@@ -44,9 +44,10 @@ static long load_img(char *img_file) {
 
   fseek(fp, 0, SEEK_END); // move cur to end.
   long size = ftell(fp);
-
-  printf("The image is %s, size = %ld\n", img_file, size);
-
+  printf("\n------- image info -------\n\n");
+  printf("The image is %s\n", img_file);
+  printf("The size  is %ld\n", size);
+  printf("\n------- memory info ------\n\n");
   fseek(fp, 0, SEEK_SET);
   int ret = fread(pmem, size, 1, fp);
   assert(ret == 1);
@@ -54,7 +55,7 @@ static long load_img(char *img_file) {
   for(uint32_t i=0;i<size;i=i+4){
     printf("0x%08x, 0x%08x\n",PMEM_START+i,paddr_read(PMEM_START+i,4));
   }
-
+  printf("\n-------- reg info --------\n\n");
 
   fclose(fp);
   return size;

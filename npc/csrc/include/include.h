@@ -19,12 +19,13 @@
 #define SERIAL_PORT   0x10000000 // 0x1000_0000 ~ 0x1000_0fff
 
 typedef struct {
-  uint64_t x[32];
-  uint64_t pc;
-  uint64_t csr[4];
+  uint32_t x[32];
+  uint32_t pc;
+  uint32_t csr[4];
 } regfile;
 
 void npc_init(int argc, char *argv[]);
+void print_regs();
 
 #ifdef DIFFTEST_ON
 void difftest_init(char *ref_so_file, long img_size);

@@ -37,11 +37,16 @@ bool checkregs(regfile *ref, regfile *dut) {
 }
 
 void print_regs(){
-  printf("dut pc = 0x%lx\n",dut_reg.pc);
+  printf("dut      pc = 0x%lx\n",dut_reg.pc);
   for (int i = 0; i < ARRLEN(regs); i++) {
-    printf("dut reg %3s = 0x%lx\n",regs[i],dut_reg.x[i]);
+    if(dut_reg.x[i]!=0){
+      printf("dut reg %3s = 0x%lx\n",regs[i],dut_reg.x[i]);
+    }
   }
   for(int i = 0; i < ARRLEN(csrs); i++){
-    printf("dut csr %3s = 0x%lx\n",csrs[i],dut_reg.csr[i]);
+    if(dut_reg.csr[i]!=0){
+      printf("dut csr %3s = 0x%lx\n",csrs[i],dut_reg.csr[i]);
+    }
   }
+  printf("--------------------------\n");
 }

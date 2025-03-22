@@ -8,5 +8,10 @@ vivado*.log vivado*.jou
 .sim/
 user/
 prj/
+!*.v
+!*.sv
+!*.cpp
+!*.h
+!*.c
 *.vcd 
 *.view

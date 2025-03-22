@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     npc_init(argc, argv);
     while (!system_exit) {
         TB(DUT(inst) = paddr_read(TB(DUT(pc)),4));
-        printf("pc:%x\n",TB(DUT(pc)));
+        print_regs();
         watch_dog();
         TB(cycles(1));
     }  

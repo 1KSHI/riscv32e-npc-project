@@ -34,6 +34,7 @@
 #define DUT(a) __DUT__->a
 
 
+
 // Check if has rst signal
 template<class, class U = void>
 struct has_rst : std::false_type { };
