@@ -27,10 +27,6 @@ int main(int argc, char *argv[]) {
     while (npc_state.state == NPC_RUNNING) {
         sdb_mainloop();
     }  
-    switch(npc_state.trap) {
-    case GOOD_TRAP: printf("\n----------EBREAK: HIT !! GOOD !! TRAP!!---------------\n\n"); break;
-    case BAD_TRAP: printf("\n----------EBREAK: HIT !! BAD  !! TRAP!!---------------\n\n"); break;
-    }
     TB(~TESTBENCH());
     exit(EXIT_SUCCESS);
 }

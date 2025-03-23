@@ -41,11 +41,11 @@ module regf(
               .WIDTH     (`CPU_WIDTH),
               .RESET_VAL (`CPU_WIDTH'b0)
           ) stl_reg (
-              .clk   (clk   ),
-              .rst   (rst),
-              .wen   (rfwen[i]),
-              .din   (wdata ),
-              .dout  (rf[i]   )
+              .i_clk   (clk   ),
+              .i_rst   (rst),
+              .i_wen   (rfwen[i]),
+              .i_din   (wdata ),
+              .o_dout  (rf[i]   )
           );
       end
   endgenerate

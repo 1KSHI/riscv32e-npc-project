@@ -3,19 +3,20 @@
 module idu(
     input clk,
     input rst,
-    input [31:0] pc,
+    input [`CPU_WIDTH-1:0] pc,
     input [31:0] inst,
     input [31:0] rs1_data_in,
     input [31:0] rs2_data_in,
     output [3:0] alu_op,
-    output reg [1:0] jump_ctrl,
     output reg [31:0] rs1_data_out,
     output reg [31:0] rs2_data_out,
     output [4:0]  rs1_addr,
     output [4:0]  rs2_addr,
-    output [31:0] branch_offset,
-    output [31:0] jump_offset,
-    output [4:0] rd_addr
+    output [4:0]  rd_addr,
+    output o_idu_jal,
+    output o_idu_jalr,
+    output o_idu_brch,
+    output [`CPU_WIDTH-1:0] o_idu_pc
 );
 wire [6:0] opcode = inst[6:0];
 assign rs1_addr = inst[19:15];
@@ -23,6 +24,7 @@ assign rs2_addr = inst[24:20];
 assign rd_addr = inst[11:7];
 wire [2:0] funct3 = inst[14:12];
 wire [6:0] funct7 = inst[31:25];
+assign o_idu_pc = pc;
 // assign rs1_data={27'b0,rs1_addr};
 // assign rs2_data={27'b0,rs2_addr};
 
@@ -67,24 +69,9 @@ always @(*)begin
     endcase
 end
 
-
-assign branch_offset=inst_B_type?imm_b:32'b0;
-assign jump_offset=inst_jal|inst_jalr?imm_j:32'b0;
-
-always@(*)begin
-    if(inst_B_type)begin 
-        jump_ctrl=2'b01;
-    end
-    else if(inst_jal)begin 
-        jump_ctrl=2'b10;
-    end
-    else if(inst_jalr)begin 
-        jump_ctrl=2'b11;
-    end
-    else begin 
-        jump_ctrl=2'b00;
-    end
-end
+assign o_idu_jal=inst_jal;
+assign o_idu_jalr=inst_jalr;
+assign o_idu_brch=inst_B_type;
 
 // wire inst_ebreak = inst==`EBREAK;
 

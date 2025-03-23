@@ -41,7 +41,7 @@ LDFLAGS += -lreadline
 .PHONY:run gdb wave clean
 
 com: $(VSRCS) $(CSRCS)
-	@rm -rf $(OBJ_DIR)
+	@rm -rf $(OBJ_DIR) ./prj ./user
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
 		--top-module $(TOP_MODULE) $^ \
 		$(addprefix -CFLAGS , $(CXXFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \

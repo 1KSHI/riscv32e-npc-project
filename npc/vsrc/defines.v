@@ -11,5 +11,8 @@
 `define S_TYPE_OP     7'b0100011
 `define I_TYPE_OP     7'b0010011
 `define EBREAK        32'b000000000001_00000_000_00000_1110011
+
+
 `define CPU_WIDTH     32
 `define REG_NUM       32
+`define INS_WIDTH     32
