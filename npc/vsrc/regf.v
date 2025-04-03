@@ -36,14 +36,14 @@ generate
     for (i = 1; i < `REG_NUM; i = i + 1) begin: regf
         assign rfwen[i] = i_en && i_idu_waddr == i;
         stl_reg #(
-            .WIDTH     (`CPU_WIDTH),
+            .WIDTH     (`CPU_WIDTH   ),
             .RESET_VAL (`CPU_WIDTH'b0)
         ) stl_reg (
-            .i_clk   (i_clk   ),
-            .i_rst   (i_rst),
-            .i_wen   (rfwen[i]),
-            .i_din   (i_idu_wdata ),
-            .o_dout  (rf[i]   )
+            .i_clk  (i_clk      ),
+            .i_rst  (i_rst      ),
+            .i_wen  (rfwen[i]   ),
+            .i_din  (i_idu_wdata),
+            .o_dout (rf[i]      )
         );
     end
 endgenerate
