@@ -22,8 +22,7 @@ typedef struct {
   uint32_t reg[32];
   uint32_t pc;
   uint32_t csr[4];
-} CPU_state;
-
+} CPU_file;
 
 
 enum npc_state_t{
@@ -49,8 +48,10 @@ void npc_init(int argc, char *argv[]);
 void print_regs(bool all);
 void cpu_exec(uint64_t n);
 void print_one_regs(char *reg);
+bool checkregs(CPU_file *ref, CPU_file *cpu);
 word_t reg_str2val(const char *s, bool *success);
 void init_log(const char *log_file); 
+
 #ifdef DIFFTEST_ON
 void difftest_init(char *ref_so_file, long img_size);
 bool difftest_check();

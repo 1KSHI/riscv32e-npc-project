@@ -3,6 +3,10 @@
 #include <getopt.h>
 char *img_file = NULL;
 static char *log_file = NULL;
+static char *diff_so_file = NULL;
+
+
+
 extern void init_disasm(); // 初始化反汇编器
 static int parse_args(int argc, char *argv[]);
 static long load_img(char *img_file);
@@ -21,11 +25,17 @@ void npc_init(int argc, char *argv[]) {
 
   init_sdb();
 
+  #if  DIFFTEST_ON
+  // Initialize differential testing.
+  difftest_init(diff_so_file, img_size);
+  #endif
+
 }
 
 static int parse_args(int argc, char *argv[]) {
   const struct option table[] = {
     {"img"      , required_argument, NULL, 'i'},
+    {"diff"     , required_argument, NULL, 'd'},
     {"log"      , required_argument, NULL, 'l'},
     {0          , 0                , NULL,  0 },
   };
@@ -33,6 +43,7 @@ static int parse_args(int argc, char *argv[]) {
   while ( (o = getopt_long(argc, argv, "-d:i:l", table, NULL)) != -1) {
     switch (o) {
       case 'l': log_file = optarg; break;
+      case 'd': diff_so_file = optarg; break;
       case 'i': img_file = optarg; break;
     }
   }

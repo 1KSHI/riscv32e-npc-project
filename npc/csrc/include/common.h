@@ -51,4 +51,5 @@ typedef uint16_t ioaddr_t;
 #define CONFIG_TIMER_GETTIMEOFDAY 1
 #define CONFIG_TARGET_NATIVE_ELF 1
 #define CONFIG_ITRACE 1
+#define DIFFTEST_ON 1
 #endif

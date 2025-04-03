@@ -32,7 +32,7 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 void device_update();
-
+#ifdef CONFIG_IRINGBUF_COND
 typedef struct {
     char buffer[RINGBUF_SIZE][133];
     int head;
@@ -68,6 +68,7 @@ void iring_check(Decode *_this){
     ringbuf_write(formatted_logbuf);
   }
 }
+#endif
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND

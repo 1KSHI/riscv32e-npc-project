@@ -3,7 +3,7 @@
 #include "include/include.h"
 
 NPC_state npc_state = {NPC_RUNNING,BAD_TRAP};
-CPU_state cpu;
+CPU_file cpu;
 TESTBENCH<Vtop> *__TB__;
 
 void sdb_mainloop();

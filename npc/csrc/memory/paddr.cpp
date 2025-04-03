@@ -2,7 +2,7 @@
 #include <memory/host.h>
 #include <memory/paddr.h>
 
-extern CPU_state cpu;
+extern CPU_file cpu;
 
 uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 

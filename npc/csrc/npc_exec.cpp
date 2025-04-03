@@ -12,34 +12,28 @@ extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nby
 #define RINGBUF_SIZE 20
 
 extern NPC_state npc_state;
-extern CPU_state cpu;
+extern CPU_file cpu;
 extern TESTBENCH<Vtop> *__TB__;
-char logbuf[128];
 extern void watch_dog();
-
+char logbuf[128];
+bool diff_skip    = false;
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
+#if DIFFTEST_ON
+  bool diff_skip_r;
+#endif
+
 static void split_asm_buf(const char *asm_buf, char *first_part, char *second_part) {
   int i = 0, j = 0;
-
   while (asm_buf[i] != '\0' && asm_buf[i] != 0 && asm_buf[i] != 9 && asm_buf[i] != 32) {
-    printf("asm_buf1[%d]:%d,%c\n", i, asm_buf[i], asm_buf[i]);
     first_part[i] = asm_buf[i];
     i++;
   }
   first_part[i] = '\0';
-
-  while (asm_buf[i] == 0 || asm_buf[i] == 9 || asm_buf[i] == 32) {
-    printf("asm_buf2[%d]:%d,%c\n", i, asm_buf[i], asm_buf[i]);
-    i++;
-  }
-
-  while (asm_buf[i] != '\0') {
-    printf("asm_buf3[%d]:%d,%c\n", i, asm_buf[i], asm_buf[i]);
-    second_part[j++] = asm_buf[i++];
-  }
+  while (asm_buf[i] == 0 || asm_buf[i] == 9 || asm_buf[i] == 32) {i++;}
+  while (asm_buf[i] != '\0') {second_part[j++] = asm_buf[i++];}
   second_part[j] = '\0';
 }
 
@@ -54,6 +48,25 @@ static void trace_and_difftest(vaddr_t pc) {
   
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(logbuf)); }
   // IFDEF(CONFIG_DIFFTEST, difftest_step(pc, dnpc));
+
+  #if DIFFTEST_ON
+    // 1. check last cycle reg status:
+    if(diff_skip_r){ //skip write or read device ins.
+      diff_cpdutreg2ref();
+    }
+    else{
+      if(!difftest_check()){
+        print_regs(false);
+        npc_state.state = NPC_END;
+        npc_state.trap  = BAD_TRAP;
+      }
+    }
+    // 2. nemu step and update nemu regs/mem:
+    if(!diff_skip){
+      difftest_step();
+    }
+    diff_skip_r = diff_skip;
+  #endif
 }
 
 static void exec_once(vaddr_t pc) {
@@ -68,31 +81,34 @@ static void exec_once(vaddr_t pc) {
       char first_part[12] = {0};
       char second_part[20] = {0};
       split_asm_buf(asm_buf, first_part, second_part);
-      printf("asm_buf:%s\n", asm_buf);
-      printf("f:%s\ns:%s\n", first_part, second_part);
     
       uint8_t *inst_bytes = (uint8_t *)&TB(DUT(inst));
       snprintf(logbuf, sizeof(logbuf), "0x%08x: %-12s %-20s %02x %02x %02x %02x", 
                pc, first_part , second_part, inst_bytes[0], inst_bytes[1], inst_bytes[2], inst_bytes[3]);
   #endif
-  TB(cycles(1));
+
+
 }
 
 static void execute(uint64_t n) {
   for (;n > 0; n --) {
+    
     exec_once(cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(cpu.pc);
-    if (npc_state.state != NPC_RUNNING) break;//stoppoint在此处触发break跳出for循环
+    if (npc_state.state != NPC_RUNNING) break;
+    TB(cycles(1));
+    if (npc_state.state != NPC_RUNNING) break;
+    
   }
 }
 
 static void statistic() {
   IFNDEF(CONFIG_TARGET_AM, setlocale(LC_NUMERIC, ""));
 #define NUMBERIC_FMT MUXDEF(CONFIG_TARGET_AM, "%", "%'") PRIu64
-  printf("host time spent = " NUMBERIC_FMT " us", g_timer);
+  printf("\nhost time spent = " NUMBERIC_FMT " us\n", g_timer);
   printf("total guest instructions = " NUMBERIC_FMT, g_nr_guest_inst);
-  if (g_timer > 0) printf("simulation frequency = " NUMBERIC_FMT " inst/s\n", g_nr_guest_inst * 1000000 / g_timer);
+  if (g_timer > 0) printf("\nsimulation frequency = " NUMBERIC_FMT " inst/s\n", g_nr_guest_inst * 1000000 / g_timer);
   else printf("Finish running in less than 1 us and can not calculate the simulation frequency\n");
 }
 
@@ -126,7 +142,7 @@ void cpu_exec(uint64_t n) {
           (npc_state.state == NPC_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (npc_state.trap == GOOD_TRAP ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
-          npc_state.pc);
+          cpu.pc);
       // fall through
     case NPC_QUIT: statistic();
   }

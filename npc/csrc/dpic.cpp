@@ -2,7 +2,7 @@
 #include "verilated_dpi.h"
 extern NPC_state npc_state;
 
-extern CPU_state cpu;
+extern CPU_file cpu;
 extern "C" void check_finsih(int ins,int a0zero){
   if(ins == 0x100073){
     npc_state.state = NPC_END;
