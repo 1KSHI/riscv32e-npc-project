@@ -17,7 +17,9 @@ module idu(
     output     [`INS_WIDTH-1:0] o_idu_inst,
     output                      o_idu_jal,
     output                      o_idu_jalr,
-    output                      o_idu_brch
+    output                      o_idu_brch,
+    output                      o_idu_mem_wren,
+    output                      o_idu_mem_rden
 );
 wire [6:0] opcode = i_ifu_inst[6:0];
 wire [2:0] funct3 = i_ifu_inst[14:12];
@@ -39,67 +41,79 @@ wire [31:0] imm_j = {i_ifu_inst[31]?11'b1111_1111_111:11'b0,i_ifu_inst[31],i_ifu
 wire [2:0] rs1_sw;
 wire [2:0] rs2_sw;
 
-assign rs1_sw[0]=inst_R_type    |inst_lui   |inst_jalr;
-assign rs1_sw[1]=inst_I_type    |inst_lui               |inst_jal;
-assign rs1_sw[2]=inst_auipc                 |inst_jalr  |inst_jal;
+assign rs1_sw[0]=inst_R_type    |inst_U_lui   |inst_I_jalr;
+assign rs1_sw[1]=inst_I_type    |inst_U_lui               |inst_J_jal;
+assign rs1_sw[2]=inst_U_auipc                 |inst_I_jalr  |inst_J_jal;
 
-assign rs2_sw[0]=inst_R_type    |inst_lui   |inst_jalr;
-assign rs2_sw[1]=inst_I_type    |inst_lui               |inst_jal;
-assign rs2_sw[2]=inst_auipc                 |inst_jalr  |inst_jal;
+assign rs2_sw[0]=inst_R_type    |inst_U_lui   |inst_I_jalr;
+assign rs2_sw[1]=inst_I_type    |inst_U_lui               |inst_J_jal;
+assign rs2_sw[2]=inst_U_auipc                 |inst_I_jalr  |inst_J_jal;
 
 always @(*)begin
     case (rs1_sw)
         3'b001:o_idu_rs1_data=i_reg_rs1_data;    //inst_R_type   
         3'b010:o_idu_rs1_data=i_reg_rs1_data;    //inst_I_type       
-        3'b011:o_idu_rs1_data=32'b0;          //inst_lui      
-        3'b100:o_idu_rs1_data=i_ifu_pc;             //inst_auipc    
-        3'b101:o_idu_rs1_data=i_reg_rs1_data;    //inst_jalr   
-        3'b110:o_idu_rs1_data=i_ifu_pc;             //inst_jal       
+        3'b011:o_idu_rs1_data=32'b0;             //inst_U_lui      
+        3'b100:o_idu_rs1_data=i_ifu_pc;          //inst_U_auipc    
+        3'b101:o_idu_rs1_data=i_reg_rs1_data;    //inst_I_jalr   
+        3'b110:o_idu_rs1_data=i_ifu_pc;          //inst_J_jal       
         default:o_idu_rs1_data=32'b0;                     
     endcase
 end
 
 always @(*)begin
     case (rs2_sw)
-        3'b001:o_idu_rs2_data=i_reg_rs2_data;    //inst_R_type
+        3'b001:o_idu_rs2_data=i_reg_rs2_data; //inst_R_type
         3'b010:o_idu_rs2_data=imm_i;          //inst_I_type        
-        3'b011:o_idu_rs2_data=imm_u;          //inst_lui             
-        3'b100:o_idu_rs2_data=imm_u;          //inst_auipc        
-        3'b101:o_idu_rs2_data=imm_i;          //inst_jalr
-        3'b110:o_idu_rs2_data=imm_j;          //inst_jal
+        3'b011:o_idu_rs2_data=imm_u;          //inst_U_lui             
+        3'b100:o_idu_rs2_data=imm_u;          //inst_U_auipc        
+        3'b101:o_idu_rs2_data=imm_i;          //inst_I_jalr
+        3'b110:o_idu_rs2_data=imm_j;          //inst_J_jal
         default:o_idu_rs2_data=32'b0;
     endcase
 end
 
-assign o_idu_jal=inst_jal;
-assign o_idu_jalr=inst_jalr;
+assign o_idu_jal=inst_J_jal;
+assign o_idu_jalr=inst_I_jalr;
 assign o_idu_brch=inst_B_type;
 
-// wire inst_ebreak = i_ifu_inst==`EBREAK;
+assign o_idu_mem_wren = inst_S_type;
+assign o_idu_mem_rden = inst_I_load;
 
-wire inst_lui    = opcode[6:0]==`LUI_OP;//0110111
-wire inst_auipc  = opcode[6:0]==`AUIPC_OP;//0010111
-wire inst_jal    = opcode[6:0]==`JAL_OP;//1101111
-wire inst_jalr   = opcode[6:0]==`JALR_OP;//1100111
-wire inst_load   = opcode[6:0]==`LOAD_OP;//0000011
-// wire inst_F_type = opcode[6:0]==`FENCE_OP;//0001111
-wire inst_R_type = opcode[6:0]==`R_TYPE_OP;//0110011
-wire inst_B_type = opcode[6:0]==`B_TYPE_OP;//1100011
-wire inst_S_type = opcode[6:0]==`S_TYPE_OP;//0100011
-wire inst_I_type_base = opcode[6:0]==`I_TYPE_OP;//0010011
-wire inst_I_type = inst_I_type_base | inst_load;
+wire inst_R_type  = opcode==`R_TYPE_OP;//0110011
+wire inst_B_type  = opcode==`B_TYPE_OP;//1100011
+wire inst_S_type  = opcode==`S_TYPE_OP;//0100011
+wire inst_I_type  = opcode==`I_TYPE_OP;//0010011
+wire inst_I_jalr  = opcode==`JALR_OP;//1100111
+wire inst_I_load  = opcode==`LOAD_OP;//0000011
+wire inst_U_lui   = opcode==`LUI_OP;//0110111
+wire inst_U_auipc = opcode==`AUIPC_OP;//0010111
+wire inst_J_jal   = opcode==`JAL_OP;//1101111
 
+// always@(*)begin
+//     case(opcode)
+//         `R_TYPE_OP: begin end
+//         `B_TYPE_OP: begin end
+//         `S_TYPE_OP: begin end
+//         `I_TYPE_OP: begin end
+//         `JALR_OP:   begin end
+//         `LOAD_OP:   begin end
+//         `LUI_OP:    begin end
+//         `AUIPC_OP:  begin end
+//         `JAL_OP:    begin end
+//     endcase
+// end
 
 //add
-wire inst_add  = inst_R_type      && funct3 == 3'b000 && funct7 == 7'b0000000;
-wire inst_addi = inst_I_type_base && funct3 == 3'b000;
+wire inst_add  = inst_R_type && funct3 == 3'b000 && funct7 == 7'b0000000;
+wire inst_addi = inst_I_type && funct3 == 3'b000;
 
-wire inst_lb  = inst_load && funct3 == 3'b000;
-wire inst_lh  = inst_load && funct3 == 3'b001;
-wire inst_lw  = inst_load && funct3 == 3'b010;
-wire inst_lbu = inst_load && funct3 == 3'b100;
-wire inst_lhu = inst_load && funct3 == 3'b101;
-wire inst_lwu = inst_load && funct3 == 3'b110;
+wire inst_lb  = inst_I_load && funct3 == 3'b000;
+wire inst_lh  = inst_I_load && funct3 == 3'b001;
+wire inst_lw  = inst_I_load && funct3 == 3'b010;
+wire inst_lbu = inst_I_load && funct3 == 3'b100;
+wire inst_lhu = inst_I_load && funct3 == 3'b101;
+wire inst_lwu = inst_I_load && funct3 == 3'b110;
 
 wire inst_beq  = inst_B_type && funct3 == 3'b000;
 wire inst_bne  = inst_B_type && funct3 == 3'b001;
@@ -114,29 +128,29 @@ wire inst_sw = inst_S_type && funct3 == 3'b010;
 
 //sub 
 wire inst_sub   = inst_R_type      && funct3 == 3'b000 && funct7 == 7'b0100000;
-wire inst_slti  = inst_I_type_base && funct3 == 3'b010;
-wire inst_sltiu = inst_I_type_base && funct3 == 3'b011;
+wire inst_slti  = inst_I_type && funct3 == 3'b010;
+wire inst_sltiu = inst_I_type && funct3 == 3'b011;
 wire inst_slt   = inst_R_type      && funct3 == 3'b010 && funct7 == 7'b0000000;
 wire inst_sltu  = inst_R_type      && funct3 == 3'b011 && funct7 == 7'b0000000;
 
 //xor funct3:100
 wire inst_xor  = inst_R_type      && funct3 == 3'b100 && funct7 == 7'b0000000;
-wire inst_xori = inst_I_type_base && funct3 == 3'b100;
+wire inst_xori = inst_I_type && funct3 == 3'b100;
 //or funct3:110
 wire inst_or   = inst_R_type      && funct3 == 3'b110 && funct7 == 7'b0000000;
-wire inst_ori  = inst_I_type_base && funct3 == 3'b110;
+wire inst_ori  = inst_I_type && funct3 == 3'b110;
 //and funct3:111
 wire inst_and  = inst_R_type      && funct3 == 3'b111 && funct7 == 7'b0000000;
-wire inst_andi = inst_I_type_base && funct3 == 3'b111;
+wire inst_andi = inst_I_type && funct3 == 3'b111;
 //srl funct3:101 funct7:0000000
 wire inst_srl  = inst_R_type      && funct3 == 3'b101 && funct7 == 7'b0000000;
-wire inst_srli = inst_I_type_base && funct3 == 3'b101;
+wire inst_srli = inst_I_type && funct3 == 3'b101;
 //sll funct3:001
 wire inst_sll  = inst_R_type      && funct3 == 3'b001 && funct7 == 7'b0000000;
-wire inst_slli = inst_I_type_base && funct3 == 3'b001;
+wire inst_slli = inst_I_type && funct3 == 3'b001;
 //sra funct3:101 funct7:0100000
 wire inst_sra  = inst_R_type      && funct3 == 3'b101 && funct7 == 7'b0100000;
-wire inst_srai = inst_I_type_base && funct3 == 3'b101;
+wire inst_srai = inst_I_type && funct3 == 3'b101;
 //mul
 
 //div
@@ -150,25 +164,25 @@ wire inst_srai = inst_I_type_base && funct3 == 3'b101;
 //alu_srl   0110
 //alu_sll   0111
 //alu_sra   1000
-assign o_idu_aluop[0] =  inst_add | inst_addi | inst_auipc | inst_jalr | inst_jal | 
-                    inst_lb  | inst_lh   | inst_lw    | inst_lbu  | inst_lhu | 
-                    inst_lwu | inst_sb   | inst_sh    | inst_sw   | inst_beq | 
-                    inst_bne | inst_blt  | inst_bge   | inst_bltu | inst_bgeu|  //000 1
-                    inst_xor | inst_xori |                                      //001 1
-                    inst_and | inst_andi |                                      //010 1
-                    inst_sll | inst_slli;                                       //011 1
+assign o_idu_aluop[0] = inst_add | inst_addi | inst_U_auipc | inst_I_jalr | inst_J_jal | 
+                        inst_lb  | inst_lh   | inst_lw    | inst_lbu  | inst_lhu | 
+                        inst_lwu | inst_sb   | inst_sh    | inst_sw   | inst_beq | 
+                        inst_bne | inst_blt  | inst_bge   | inst_bltu | inst_bgeu|  //000 1
+                        inst_xor | inst_xori |                                      //001 1
+                        inst_and | inst_andi |                                      //010 1
+                        inst_sll | inst_slli;                                       //011 1
 
-assign o_idu_aluop[1] =  inst_sub | inst_slti | inst_sltiu | inst_slt | inst_sltu |  //00 1 0
-                    inst_xor | inst_xori |                                      //00 1 1
-                    inst_srl | inst_srli |                                      //01 1 0
-                    inst_sll | inst_slli;                                       //01 1 1
+assign o_idu_aluop[1] = inst_sub | inst_slti | inst_sltiu | inst_slt | inst_sltu |  //00 1 0
+                        inst_xor | inst_xori |                                      //00 1 1
+                        inst_srl | inst_srli |                                      //01 1 0
+                        inst_sll | inst_slli;                                       //01 1 1
 
-assign o_idu_aluop[2] =  inst_or  | inst_ori  |                                      //0 1 00
-                    inst_and | inst_andi |                                      //0 1 01
-                    inst_srl | inst_srli |                                      //0 1 10
-                    inst_sll | inst_slli;                                       //0 1 11
+assign o_idu_aluop[2] = inst_or  | inst_ori  |                                      //0 1 00
+                        inst_and | inst_andi |                                      //0 1 01
+                        inst_srl | inst_srli |                                      //0 1 10
+                        inst_sll | inst_slli;                                       //0 1 11
 
-assign o_idu_aluop[3] =  inst_sra | inst_srai;                                        //1 000
+assign o_idu_aluop[3] = inst_sra | inst_srai;                                        //1 000
 
 endmodule
 

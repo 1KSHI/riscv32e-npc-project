@@ -2,6 +2,9 @@
 `ifdef SIMULATION
 import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
 import "DPI-C" function void check_regfile(input logic [`REG_NUM*`CPU_WIDTH-1:0] regf,input int pc);
+import "DPI-C" function int pmem_read(input int raddr);
+import "DPI-C" function void pmem_write(input int waddr, input int wdata, input byte wmask);
+
 `endif
 
 module top(
@@ -62,6 +65,8 @@ wire idu_jalr;
 wire idu_brch;
 wire [`CPU_WIDTH-1:0] idu_pc;
 wire [`INS_WIDTH-1:0] idu_inst;
+wire idu_mem_wren;
+wire idu_mem_rden;
 
 idu idu(
     .i_clk          (clk         ),
@@ -80,7 +85,9 @@ idu idu(
     .o_idu_inst     (idu_inst    ),
     .o_idu_jal      (idu_jal     ),
     .o_idu_jalr     (idu_jalr    ),
-    .o_idu_brch     (idu_brch    )
+    .o_idu_brch     (idu_brch    ),
+    .o_idu_mem_wren (idu_mem_wren),
+    .o_idu_mem_rden (idu_mem_rden)
 );
 
 /* exu module */
@@ -113,12 +120,35 @@ bru bru(
 
 `ifdef SIMULATION
 wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
+reg [31:0] rdata;
+wire valid = idu_mem_wren | idu_mem_rden;
+wire wen   = idu_mem_wren;
+wire [31:0] wdata = idu_rs2_data;
+wire [31:0] raddr = exu_aluout;
+wire [31:0] waddr = exu_aluout;
+wire [3:0]  wmask = {4{wen}} & {4{idu_mem_wren}}; // 4'b1111;
 
 always @(*) begin
   check_finsih  (inst,s_a0zero);
   check_regfile (flat_rf,pc   );
 end
+
+// always @(*) begin
+//     if (valid) begin // 有读写请求时
+//       rdata = pmem_read(raddr);
+//       if (wen) begin // 有写请求时
+//         pmem_write(waddr, wdata, wmask);
+//       end
+//     end
+//     else begin
+//       rdata = 0;
+//     end
+//   end
 `endif
+
+
+
+
 
 endmodule
 
