@@ -1,188 +1,111 @@
 `include "defines.v"
 
 module idu(
-    input                       i_clk,
-    input                       i_rst,
-    input      [`CPU_WIDTH-1:0] i_ifu_pc,
-    input      [`INS_WIDTH-1:0] i_ifu_inst,
-    input      [`CPU_WIDTH-1:0] i_reg_rs1_data,
-    input      [`CPU_WIDTH-1:0] i_reg_rs2_data,
-    output     [3:0]            o_idu_aluop,
-    output reg [`CPU_WIDTH-1:0] o_idu_rs1_data,
-    output reg [`CPU_WIDTH-1:0] o_idu_rs2_data,
-    output     [4:0]            o_idu_rs1_addr,
-    output     [4:0]            o_idu_rs2_addr,
-    output     [4:0]            o_idu_rd_addr,
-    output     [`CPU_WIDTH-1:0] o_idu_pc,
-    output     [`INS_WIDTH-1:0] o_idu_inst,
-    output                      o_idu_jal,
-    output                      o_idu_jalr,
-    output                      o_idu_brch,
-    output                      o_idu_mem_wren,
-    output                      o_idu_mem_rden
+    input                           i_clk,
+    input                           i_rst,
+    input      [`CPU_WIDTH-1:0]     i_ifu_pc,
+    input      [`INS_WIDTH-1:0]     i_ifu_inst,
+    output reg [`EXU_OPT_WIDTH-1:0] o_idu_exop,
+    output reg [`EXU_SEL_WIDTH-1:0] o_idu_exsel,
+    output reg [`CPU_ADDR-1:0]      o_idu_rs1_addr,
+    output reg [`CPU_ADDR-1:0]      o_idu_rs2_addr,
+    output reg [`CPU_ADDR-1:0]      o_idu_rd_addr,
+    output     [`CPU_WIDTH-1:0]     o_idu_pc,
+    output     [`INS_WIDTH-1:0]     o_idu_inst,
+    output                          o_idu_jal,
+    output                          o_idu_jalr,
+    output                          o_idu_brch,
+    output                          o_idu_lden,
+    output                          o_idu_sten,
+    output     [2:0]                o_idu_funct3,
+    output reg                      o_idu_rd_wren,
+    output reg [`CPU_WIDTH-1:0]     o_idu_imm
 );
 wire [6:0] opcode = i_ifu_inst[6:0];
 wire [2:0] funct3 = i_ifu_inst[14:12];
 wire [6:0] funct7 = i_ifu_inst[31:25];
 
-assign o_idu_rs1_addr = i_ifu_inst[19:15];
-assign o_idu_rs2_addr = i_ifu_inst[24:20];
-assign o_idu_rd_addr  = i_ifu_inst[11:7];
-
 assign o_idu_pc   = i_ifu_pc;
 assign o_idu_inst = i_ifu_inst;
 
-wire [31:0] imm_i = {i_ifu_inst[31]?20'b1111_1111_1111_1111_1111:20'b0,i_ifu_inst[31:20]};
-wire [31:0] imm_s = {i_ifu_inst[31]?20'b1111_1111_1111_1111_1111:20'b0,i_ifu_inst[31:25],i_ifu_inst[11:7]};
-wire [31:0] imm_b = {i_ifu_inst[31]?19'b1111_1111_1111_1111_111:19'b0,i_ifu_inst[31],i_ifu_inst[7],i_ifu_inst[30:25],i_ifu_inst[11:8],1'b0};
+wire [31:0] imm_i = {{20{i_ifu_inst[31]}},i_ifu_inst[31:20]};
+wire [31:0] imm_s = {{20{i_ifu_inst[31]}},i_ifu_inst[31:25],i_ifu_inst[11:7]};
+wire [31:0] imm_b = {{20{i_ifu_inst[31]}},i_ifu_inst[7],i_ifu_inst[30:25],i_ifu_inst[11:8],1'b0};
 wire [31:0] imm_u = {i_ifu_inst[31:12],12'b0};
-wire [31:0] imm_j = {i_ifu_inst[31]?11'b1111_1111_111:11'b0,i_ifu_inst[31],i_ifu_inst[19:12],i_ifu_inst[20],i_ifu_inst[30:21],1'b0};
+wire [31:0] imm_j = {{12{i_ifu_inst[31]}},i_ifu_inst[19:12],i_ifu_inst[20],i_ifu_inst[30:21],1'b0};
 
-wire [2:0] rs1_sw;
-wire [2:0] rs2_sw;
+wire [4:0] rs1_addr = i_ifu_inst[19:15];
+wire [4:0] rs2_addr = i_ifu_inst[24:20];
+wire [4:0] rd_addr  = i_ifu_inst[11:7];
 
-assign rs1_sw[0]=inst_R_type    |inst_U_lui   |inst_I_jalr;
-assign rs1_sw[1]=inst_I_type    |inst_U_lui               |inst_J_jal;
-assign rs1_sw[2]=inst_U_auipc                 |inst_I_jalr  |inst_J_jal;
-
-assign rs2_sw[0]=inst_R_type    |inst_U_lui   |inst_I_jalr;
-assign rs2_sw[1]=inst_I_type    |inst_U_lui               |inst_J_jal;
-assign rs2_sw[2]=inst_U_auipc                 |inst_I_jalr  |inst_J_jal;
-
-always @(*)begin
-    case (rs1_sw)
-        3'b001:o_idu_rs1_data=i_reg_rs1_data;    //inst_R_type   
-        3'b010:o_idu_rs1_data=i_reg_rs1_data;    //inst_I_type       
-        3'b011:o_idu_rs1_data=32'b0;             //inst_U_lui      
-        3'b100:o_idu_rs1_data=i_ifu_pc;          //inst_U_auipc    
-        3'b101:o_idu_rs1_data=i_reg_rs1_data;    //inst_I_jalr   
-        3'b110:o_idu_rs1_data=i_ifu_pc;          //inst_J_jal       
-        default:o_idu_rs1_data=32'b0;                     
+always@(*)begin
+    case(opcode)
+        `TYPE_R:       begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = rs2_addr; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = `CPU_WIDTH'b0; end//TYPE_R
+        `TYPE_S:       begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = rs2_addr; o_idu_rd_addr = 0      ; o_idu_rd_wren = 1'b0; o_idu_imm = imm_s;         end//TYPE_S
+        `TYPE_B:       begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = rs2_addr; o_idu_rd_addr = 0      ; o_idu_rd_wren = 1'b0; o_idu_imm = imm_b;         end//TYPE_B
+        `TYPE_I:       begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_i;         end//TYPE_I
+        `TYPE_I_LOAD:  begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_i;         end//TYPE_I_LOAD
+        `TYPE_I_JALR:  begin o_idu_rs1_addr = rs1_addr; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_i;         end//TYPE_I_JALR
+        `TYPE_U_LUI:   begin o_idu_rs1_addr = 0       ; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_u;         end//TYPE_U_LUI
+        `TYPE_U_AUIPC: begin o_idu_rs1_addr = 0       ; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_u;         end//TYPE_U_AUIPC
+        `TYPE_J_JAL:   begin o_idu_rs1_addr = 0       ; o_idu_rs2_addr = 0       ; o_idu_rd_addr = rd_addr; o_idu_rd_wren = 1'b1; o_idu_imm = imm_j;         end//TYPE_J_JAL
+        default:       begin o_idu_rs1_addr = 0       ; o_idu_rs2_addr = 0       ; o_idu_rd_addr = 0      ; o_idu_rd_wren = 1'b0; o_idu_imm = `CPU_WIDTH'b0; end//
     endcase
 end
 
-always @(*)begin
-    case (rs2_sw)
-        3'b001:o_idu_rs2_data=i_reg_rs2_data; //inst_R_type
-        3'b010:o_idu_rs2_data=imm_i;          //inst_I_type        
-        3'b011:o_idu_rs2_data=imm_u;          //inst_U_lui             
-        3'b100:o_idu_rs2_data=imm_u;          //inst_U_auipc        
-        3'b101:o_idu_rs2_data=imm_i;          //inst_I_jalr
-        3'b110:o_idu_rs2_data=imm_j;          //inst_J_jal
-        default:o_idu_rs2_data=32'b0;
+always @(*) begin
+    o_idu_exop   = `EXU_NOP;
+    o_idu_exsel = `EXU_SEL_IMM;
+    case (opcode)
+        `TYPE_S:            begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
+        `TYPE_I_LOAD:       begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_IMM; end // rdid = M[rs1+imm]
+        `TYPE_I_JALR:       begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_PC4; end // rdid = PC+4
+        `TYPE_J_JAL:        begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_PC4; end // rdid = PC+4
+        `TYPE_U_LUI:        begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_IMM; end // rdid = x0 + imm
+        `TYPE_U_AUIPC:      begin o_idu_exop = `EXU_ADD;  o_idu_exsel = `EXU_SEL_PCI; end // rdid = pc + imm
+        `TYPE_B:            begin                                                     end // no use for exu, idu return. nop for type_b.
+        `TYPE_I:
+        begin
+          o_idu_exsel = `EXU_SEL_IMM;
+          case (funct3)
+            `FUNC3_ADD_SUB_MUL:   o_idu_exop = `EXU_ADD; 
+            `FUNC3_SLL_MULH:      o_idu_exop = `EXU_SLL;
+            `FUNC3_SRL_SRA_DIVU:  case (funct7[6:1]) 6'b000000: o_idu_exop = `EXU_SRL; 6'b010000:o_idu_exop = `EXU_SRA; default: ; endcase
+            `FUNC3_XOR_DIV:       o_idu_exop = `EXU_XOR;
+            `FUNC3_OR_REM:        o_idu_exop = `EXU_OR ;
+            `FUNC3_AND_REMU:      o_idu_exop = `EXU_AND;
+            `FUNC3_SLT_MULHSU:    o_idu_exop = `EXU_SLT;
+            `FUNC3_SLTU_MULHU:    o_idu_exop = `EXU_SLTU;
+            default:              ;
+          endcase
+        end
+        `TYPE_R:
+        begin
+          o_idu_exsel = `EXU_SEL_REG;
+          case (funct3)
+            `FUNC3_ADD_SUB_MUL:  case (funct7) 7'b0000000:o_idu_exop = `EXU_ADD ; 7'b0000001: o_idu_exop = `EXU_MUL   ; 7'b0100000: o_idu_exop = `EXU_SUB; default: ; endcase
+            `FUNC3_SRL_SRA_DIVU: case (funct7) 7'b0000000:o_idu_exop = `EXU_SRL ; 7'b0000001: o_idu_exop = `EXU_DIVU  ; 7'b0100000: o_idu_exop = `EXU_SRA; default: ; endcase
+            `FUNC3_SLL_MULH:     case (funct7) 7'b0000000:o_idu_exop = `EXU_SLL ; 7'b0000001: o_idu_exop = `EXU_MULH  ; default: ; endcase
+            `FUNC3_XOR_DIV:      case (funct7) 7'b0000000:o_idu_exop = `EXU_XOR ; 7'b0000001: o_idu_exop = `EXU_DIV   ; default: ; endcase
+            `FUNC3_OR_REM:       case (funct7) 7'b0000000:o_idu_exop = `EXU_OR  ; 7'b0000001: o_idu_exop = `EXU_REM   ; default: ; endcase
+            `FUNC3_AND_REMU:     case (funct7) 7'b0000000:o_idu_exop = `EXU_AND ; 7'b0000001: o_idu_exop = `EXU_REMU  ; default: ; endcase
+            `FUNC3_SLT_MULHSU:   case (funct7) 7'b0000000:o_idu_exop = `EXU_SLT ; 7'b0000001: o_idu_exop = `EXU_MULHSU; default: ; endcase
+            `FUNC3_SLTU_MULHU:   case (funct7) 7'b0000000:o_idu_exop = `EXU_SLTU; 7'b0000001: o_idu_exop = `EXU_MULHU ; default: ; endcase
+            default:             ;
+          endcase
+        end
+      default:  ;
     endcase
-end
+  end
 
-assign o_idu_jal=inst_J_jal;
-assign o_idu_jalr=inst_I_jalr;
-assign o_idu_brch=inst_B_type;
 
-assign o_idu_mem_wren = inst_S_type;
-assign o_idu_mem_rden = inst_I_load;
+  assign o_idu_funct3 = funct3;
+  assign o_idu_lden = (opcode == `TYPE_I_LOAD) ? 1'b1 : 1'b0;
+  assign o_idu_sten = (opcode == `TYPE_S)      ? 1'b1 : 1'b0;
 
-wire inst_R_type  = opcode==`R_TYPE_OP;//0110011
-wire inst_B_type  = opcode==`B_TYPE_OP;//1100011
-wire inst_S_type  = opcode==`S_TYPE_OP;//0100011
-wire inst_I_type  = opcode==`I_TYPE_OP;//0010011
-wire inst_I_jalr  = opcode==`JALR_OP;//1100111
-wire inst_I_load  = opcode==`LOAD_OP;//0000011
-wire inst_U_lui   = opcode==`LUI_OP;//0110111
-wire inst_U_auipc = opcode==`AUIPC_OP;//0010111
-wire inst_J_jal   = opcode==`JAL_OP;//1101111
-
-// always@(*)begin
-//     case(opcode)
-//         `R_TYPE_OP: begin end
-//         `B_TYPE_OP: begin end
-//         `S_TYPE_OP: begin end
-//         `I_TYPE_OP: begin end
-//         `JALR_OP:   begin end
-//         `LOAD_OP:   begin end
-//         `LUI_OP:    begin end
-//         `AUIPC_OP:  begin end
-//         `JAL_OP:    begin end
-//     endcase
-// end
-
-//add
-wire inst_add  = inst_R_type && funct3 == 3'b000 && funct7 == 7'b0000000;
-wire inst_addi = inst_I_type && funct3 == 3'b000;
-
-wire inst_lb  = inst_I_load && funct3 == 3'b000;
-wire inst_lh  = inst_I_load && funct3 == 3'b001;
-wire inst_lw  = inst_I_load && funct3 == 3'b010;
-wire inst_lbu = inst_I_load && funct3 == 3'b100;
-wire inst_lhu = inst_I_load && funct3 == 3'b101;
-wire inst_lwu = inst_I_load && funct3 == 3'b110;
-
-wire inst_beq  = inst_B_type && funct3 == 3'b000;
-wire inst_bne  = inst_B_type && funct3 == 3'b001;
-wire inst_blt  = inst_B_type && funct3 == 3'b100;
-wire inst_bge  = inst_B_type && funct3 == 3'b101;
-wire inst_bltu = inst_B_type && funct3 == 3'b110;
-wire inst_bgeu = inst_B_type && funct3 == 3'b111;
-
-wire inst_sb = inst_S_type && funct3 == 3'b000;
-wire inst_sh = inst_S_type && funct3 == 3'b001;
-wire inst_sw = inst_S_type && funct3 == 3'b010;
-
-//sub 
-wire inst_sub   = inst_R_type      && funct3 == 3'b000 && funct7 == 7'b0100000;
-wire inst_slti  = inst_I_type && funct3 == 3'b010;
-wire inst_sltiu = inst_I_type && funct3 == 3'b011;
-wire inst_slt   = inst_R_type      && funct3 == 3'b010 && funct7 == 7'b0000000;
-wire inst_sltu  = inst_R_type      && funct3 == 3'b011 && funct7 == 7'b0000000;
-
-//xor funct3:100
-wire inst_xor  = inst_R_type      && funct3 == 3'b100 && funct7 == 7'b0000000;
-wire inst_xori = inst_I_type && funct3 == 3'b100;
-//or funct3:110
-wire inst_or   = inst_R_type      && funct3 == 3'b110 && funct7 == 7'b0000000;
-wire inst_ori  = inst_I_type && funct3 == 3'b110;
-//and funct3:111
-wire inst_and  = inst_R_type      && funct3 == 3'b111 && funct7 == 7'b0000000;
-wire inst_andi = inst_I_type && funct3 == 3'b111;
-//srl funct3:101 funct7:0000000
-wire inst_srl  = inst_R_type      && funct3 == 3'b101 && funct7 == 7'b0000000;
-wire inst_srli = inst_I_type && funct3 == 3'b101;
-//sll funct3:001
-wire inst_sll  = inst_R_type      && funct3 == 3'b001 && funct7 == 7'b0000000;
-wire inst_slli = inst_I_type && funct3 == 3'b001;
-//sra funct3:101 funct7:0100000
-wire inst_sra  = inst_R_type      && funct3 == 3'b101 && funct7 == 7'b0100000;
-wire inst_srai = inst_I_type && funct3 == 3'b101;
-//mul
-
-//div
-
-//rem
-//alu_add   0001
-//alu_sub   0010
-//alu_xor   0011
-//alu_or    0100
-//alu_and   0101
-//alu_srl   0110
-//alu_sll   0111
-//alu_sra   1000
-assign o_idu_aluop[0] = inst_add | inst_addi | inst_U_auipc | inst_I_jalr | inst_J_jal | 
-                        inst_lb  | inst_lh   | inst_lw    | inst_lbu  | inst_lhu | 
-                        inst_lwu | inst_sb   | inst_sh    | inst_sw   | inst_beq | 
-                        inst_bne | inst_blt  | inst_bge   | inst_bltu | inst_bgeu|  //000 1
-                        inst_xor | inst_xori |                                      //001 1
-                        inst_and | inst_andi |                                      //010 1
-                        inst_sll | inst_slli;                                       //011 1
-
-assign o_idu_aluop[1] = inst_sub | inst_slti | inst_sltiu | inst_slt | inst_sltu |  //00 1 0
-                        inst_xor | inst_xori |                                      //00 1 1
-                        inst_srl | inst_srli |                                      //01 1 0
-                        inst_sll | inst_slli;                                       //01 1 1
-
-assign o_idu_aluop[2] = inst_or  | inst_ori  |                                      //0 1 00
-                        inst_and | inst_andi |                                      //0 1 01
-                        inst_srl | inst_srli |                                      //0 1 10
-                        inst_sll | inst_slli;                                       //0 1 11
-
-assign o_idu_aluop[3] = inst_sra | inst_srai;                                        //1 000
+  assign o_idu_jal  = (opcode == `TYPE_J_JAL)? 1:0;
+  assign o_idu_jalr = (opcode == `TYPE_I_JALR)? 1:0;
+  assign o_idu_brch = (opcode == `TYPE_B)? 1:0;
 
 endmodule
 

@@ -7,6 +7,7 @@
 		"include.h": "c",
 		"paddr.h": "c",
 		"ratio": "cpp",
-		"capstone.h": "c"
+		"capstone.h": "c",
+		"random": "cpp"
 	}
 }

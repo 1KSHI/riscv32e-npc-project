@@ -63,6 +63,9 @@ gdb:com ${DIFFTEST}
 	$(call git_commit, "gdb RTL") # DO NOT REMOVE THIS LINE!!!
 	@gdb --silent -s ${BIN} --args ${NPC_EXEC}
 
+wave:
+	gtkwave 4Vtop.vcd
+
 # yosys simulation
 yos: MODULE ?= exu
 yos:

@@ -3,16 +3,17 @@
 module bru(
     input                       i_clk,
     input                       i_rst,
-    input      [`CPU_WIDTH-1:0] i_alu_out,
+    input      [`CPU_WIDTH-1:0] i_idu_imm,
     input      [`CPU_WIDTH-1:0] i_ifu_pc,
     input                       i_idu_jal,
     input                       i_idu_jalr,
     input                       i_idu_brch,
+    input      [`CPU_WIDTH-1:0] i_bru_rs1_data,
     output reg [`CPU_WIDTH-1:0] o_bru_next_pc
 );
 
-wire [`CPU_WIDTH-1:0] jal_pc  = i_alu_out;
-wire [`CPU_WIDTH-1:0] jalr_pc = (i_alu_out)&~1;
+wire [`CPU_WIDTH-1:0] jal_pc  = i_ifu_pc+i_idu_imm;
+wire [`CPU_WIDTH-1:0] jalr_pc = (i_bru_rs1_data+i_idu_imm)&~1;
 wire [`CPU_WIDTH-1:0] seq_pc  = i_ifu_pc+4;
 
 always @(*)begin

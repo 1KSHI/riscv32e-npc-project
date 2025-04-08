@@ -4,12 +4,12 @@ module regf(
   input         i_clk,
   input         i_rst,
   input         i_en,
-  input  [4:0]  i_idu_rs1_addr,
-  input  [4:0]  i_idu_rs2_addr,
-  input  [4:0]  i_idu_waddr,
-  input  [31:0] i_idu_wdata,
-  output [31:0] o_reg_rs1_data,
-  output [31:0] o_reg_rs2_data,
+  input  [`CPU_ADDR-1:0]  i_idu_rs1_addr,
+  input  [`CPU_ADDR-1:0]  i_idu_rs2_addr,
+  input  [`CPU_ADDR-1:0]  i_idu_waddr,
+  input  [`CPU_WIDTH-1:0] i_idu_wdata,
+  output [`CPU_WIDTH-1:0] o_reg_rs1_data,
+  output [`CPU_WIDTH-1:0] o_reg_rs2_data,
   `ifdef SIMULATION
   output [`REG_NUM*`CPU_WIDTH-1:0] o_flat_rf,
   `endif

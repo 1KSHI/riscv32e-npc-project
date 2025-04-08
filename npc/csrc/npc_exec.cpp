@@ -11,9 +11,11 @@ extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nby
 #define MAX_INST_TO_PRINT 200
 #define RINGBUF_SIZE 20
 
+bool init_flag = false;
+
 extern NPC_state npc_state;
 extern CPU_file cpu;
-extern TESTBENCH<Vtop> *__TB__;
+extern Vtop* top;
 extern void watch_dog();
 char logbuf[128];
 bool diff_skip    = false;
@@ -70,21 +72,21 @@ static void trace_and_difftest(vaddr_t pc) {
 }
 
 static void exec_once(vaddr_t pc) {
-  pc = TB(DUT(pc));
-  TB(DUT(inst) = paddr_read(pc , 4));
+  top->inst = paddr_read(pc, 4);
+  
   print_regs(false);
   watch_dog();
 
   #ifdef CONFIG_ITRACE
       char asm_buf[128];
-      disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&TB(DUT(inst)), 4);
+      disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(top->inst), 4);
       char first_part[12] = {0};
       char second_part[20] = {0};
       split_asm_buf(asm_buf, first_part, second_part);
     
-      uint8_t *inst_bytes = (uint8_t *)&TB(DUT(inst));
+      uint8_t *inst_bytes = (uint8_t *)&(top->inst);
       snprintf(logbuf, sizeof(logbuf), "0x%08x: %-12s %-20s %02x %02x %02x %02x", 
-               pc, first_part , second_part, inst_bytes[0], inst_bytes[1], inst_bytes[2], inst_bytes[3]);
+               pc, first_part , second_part, inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0]);
   #endif
 
 
@@ -92,12 +94,10 @@ static void exec_once(vaddr_t pc) {
 
 static void execute(uint64_t n) {
   for (;n > 0; n --) {
-    
     exec_once(cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(cpu.pc);
-    if (npc_state.state != NPC_RUNNING) break;
-    TB(cycles(1));
+    single_cycle();
     if (npc_state.state != NPC_RUNNING) break;
     
   }
