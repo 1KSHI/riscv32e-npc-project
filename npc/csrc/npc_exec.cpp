@@ -52,42 +52,35 @@ static void trace_and_difftest(vaddr_t pc) {
   // IFDEF(CONFIG_DIFFTEST, difftest_step(pc, dnpc));
 
   #if DIFFTEST_ON
-    // 1. check last cycle reg status:
-    if(diff_skip_r){ //skip write or read device ins.
-      diff_cpdutreg2ref();
-    }
-    else{
-      if(!difftest_check()){
-        print_regs(false);
-        npc_state.state = NPC_END;
-        npc_state.trap  = BAD_TRAP;
-      }
-    }
-    // 2. nemu step and update nemu regs/mem:
-    if(!diff_skip){
-      difftest_step();
-    }
-    diff_skip_r = diff_skip;
+  diff_cpdutreg2ref();
+  if(!difftest_check()){
+    print_regs(false);
+    npc_state.state = NPC_END;
+    npc_state.trap  = BAD_TRAP;
+  }
+  difftest_step();
+  
   #endif
+
+  
 }
 
 static void exec_once(vaddr_t pc) {
-  top->inst = paddr_read(pc, 4);
-  
-  print_regs(false);
+  printf("--------------------------\n");
+  // print_regs(false);
   watch_dog();
 
-  #ifdef CONFIG_ITRACE
-      char asm_buf[128];
-      disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(top->inst), 4);
-      char first_part[12] = {0};
-      char second_part[20] = {0};
-      split_asm_buf(asm_buf, first_part, second_part);
+  // #ifdef CONFIG_ITRACE
+  //     char asm_buf[128];
+  //     disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(top->inst), 4);
+  //     char first_part[12] = {0};
+  //     char second_part[20] = {0};
+  //     split_asm_buf(asm_buf, first_part, second_part);
     
-      uint8_t *inst_bytes = (uint8_t *)&(top->inst);
-      snprintf(logbuf, sizeof(logbuf), "0x%08x: %-12s %-20s %02x %02x %02x %02x", 
-               pc, first_part , second_part, inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0]);
-  #endif
+  //     uint8_t *inst_bytes = (uint8_t *)&(top->inst);
+  //     snprintf(logbuf, sizeof(logbuf), "0x%08x: %-12s %-20s %02x %02x %02x %02x", 
+  //              pc, first_part , second_part, inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0]);
+  // #endif
 
 
 }
@@ -96,8 +89,8 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once(cpu.pc);
     g_nr_guest_inst ++;
-    trace_and_difftest(cpu.pc);
     single_cycle();
+    trace_and_difftest(cpu.pc);
     if (npc_state.state != NPC_RUNNING) break;
     
   }
@@ -144,6 +137,6 @@ void cpu_exec(uint64_t n) {
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           cpu.pc);
       // fall through
-    case NPC_QUIT: statistic();
+    case NPC_QUIT: statistic();single_cycle();
   }
 }

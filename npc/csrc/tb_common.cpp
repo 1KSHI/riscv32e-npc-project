@@ -18,6 +18,7 @@ void single_cycle() {
     top->clk = 1; 
     step_wave();
 }
+
   
 void reset(int n) {
     top->rst = 1;
@@ -29,7 +30,6 @@ void sim_init(){
   contextp = new VerilatedContext;
   tfp = new VerilatedVcdC;
   top = new Vtop;
-
   contextp->traceEverOn(true);
   top->trace(tfp, 10);
   tfp->open("dump.vcd");

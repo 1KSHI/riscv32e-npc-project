@@ -20,6 +20,7 @@ void watch_dog() {
 
 int main(int argc, char *argv[]) {
     sim_init();
+    single_cycle();
     reset(1);
     npc_init(argc, argv);
     while (npc_state.state == NPC_RUNNING) {

@@ -10,10 +10,15 @@ import "DPI-C" function void pmem_write(input int waddr, input int wdata, input 
 module top(
     input                       clk,
     input                       rst,
-    input      [`INS_WIDTH-1:0] inst,
     output reg [`CPU_WIDTH-1:0] pc
 );
-assign pc=ifu_pc;
+always @(posedge clk) begin
+    if (rst) begin
+        pc <= `CPU_WIDTH'h80000000;
+    end else begin
+        pc <= ifu_pc;
+    end
+end
 /* regfil module */
 
 wire [`CPU_WIDTH-1:0] reg_rs1_data;
@@ -21,40 +26,36 @@ wire [`CPU_WIDTH-1:0] reg_rs2_data;
 wire s_a0zero;
 
 regf regf(
-    .i_clk          (clk                        ),
-    .i_rst          (rst                        ),
-    .i_en           (idu_rd_wren                ),
-    .i_idu_rs1_addr (idu_rs1_addr               ),
-    .i_idu_rs2_addr (idu_rs2_addr               ),
-    .i_idu_waddr    (idu_rd_addr                ),
-    .i_idu_wdata    (exu_aluout                 ),
-    .o_reg_rs1_data (reg_rs1_data               ),
-    .o_reg_rs2_data (reg_rs2_data               ),
-    `ifdef SIMULATION
-    .o_flat_rf      (flat_rf                    ),
-    `endif
-    .o_s_a0zero     (s_a0zero                   )
+    .i_clk          (clk                      ),
+    .i_rst          (rst                      ),
+    .i_en           (idu_rd_wren |idu_lden    ),
+    .i_idu_rs1_addr (idu_rs1_addr             ),
+    .i_idu_rs2_addr (idu_rs2_addr             ),
+    .i_idu_waddr    (idu_rd_addr              ),
+    .i_idu_wdata    (idu_lden?rdata:exu_aluout),
+    .o_reg_rs1_data (reg_rs1_data             ),
+    .o_reg_rs2_data (reg_rs2_data             ),
+    `ifdef SIMULATION  
+    .o_flat_rf      (flat_rf                  ),
+    `endif  
+    .o_s_a0zero     (s_a0zero                 )
 );
 
 /* ifu module */
 
 wire [`CPU_WIDTH-1:0] ifu_pc;
-wire ifu_mem_rden;
 
 ifu ifu(
     .i_clk          (clk        ),
     .i_rst          (rst        ),
     .i_next_pc      (bru_next_pc),
     .i_ifu_wen      (1'b1       ),
-    .o_ifu_pc       (ifu_pc     ),
-    .o_ifu_mem_rden (ifu_mem_rden)
+    .o_ifu_pc       (ifu_pc     )
 );
 
 /* idu module */
 wire [`EXU_OPT_WIDTH-1:0] idu_exop;
 wire [`EXU_SEL_WIDTH-1:0] idu_exsel;
-wire [`CPU_WIDTH-1:0] idu_rs1_data;
-wire [`CPU_WIDTH-1:0] idu_rs2_data;
 wire [`CPU_ADDR-1:0] idu_rs1_addr;
 wire [`CPU_ADDR-1:0] idu_rs2_addr;
 wire [`CPU_ADDR-1:0] idu_rd_addr;
@@ -63,8 +64,6 @@ wire idu_jalr;
 wire idu_brch;
 wire [`CPU_WIDTH-1:0] idu_pc;
 wire [`INS_WIDTH-1:0] idu_inst;
-wire idu_mem_wren;
-wire idu_mem_rden;
 wire idu_rd_wren;
 wire [`CPU_WIDTH-1:0] idu_imm;
 wire idu_lden; 
@@ -75,7 +74,7 @@ idu idu(
     .i_clk          (clk         ),
     .i_rst          (rst         ),
     .i_ifu_pc       (ifu_pc      ),
-    .i_ifu_inst     (inst        ),
+    .i_ifu_inst     (test_inst        ),
     .o_idu_exop     (idu_exop    ),
     .o_idu_exsel    (idu_exsel   ),
     .o_idu_rs1_addr (idu_rs1_addr),
@@ -127,37 +126,54 @@ bru bru(
 );
 
 
-wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
-reg [`CPU_WIDTH-1:0] rdata;
-wire valid = idu_mem_wren | idu_mem_rden;
-wire wen   = idu_mem_wren;
-wire [`CPU_WIDTH-1:0] wdata = idu_rs2_data;
+
+
+wire rden   = idu_lden;
+wire wren   = idu_sten;
+wire valid  = (idu_lden | idu_sten);
+wire [`CPU_WIDTH-1:0] wdata = reg_rs2_data;
 wire [`CPU_WIDTH-1:0] raddr = exu_aluout;
 wire [`CPU_WIDTH-1:0] waddr = exu_aluout;
-wire [3:0]  wmask = {4{wen}} & {4{idu_mem_wren}}; // 4'b1111;
-wire [7:0] wmask_expanded = {4'b0, wmask}; // 扩展为 8 位宽度
-
-`ifdef SIMULATION
-
+reg  [7:0]  wmask;
+reg  [`CPU_WIDTH-1:0] rdata;
+reg  [`CPU_WIDTH-1:0]test_inst;
 always @(*) begin
-  check_finsih  (inst, s_a0zero);
-  check_regfile (flat_rf, pc);
+    if(idu_sten)begin
+        case (idu_funct3)
+            3'b000: wmask = 8'h01; // byte
+            3'b001: wmask = 8'h03; // half
+            3'b010: wmask = 8'h0F; // word
+            default: wmask = 8'h00; // default
+        endcase
+    end
 end
 
-// always @(*) begin
-//     rdata = 0; // 确保所有路径都有默认值，避免锁存器推断
-//     if (valid) begin // 有读写请求时
-//         if (wen) begin // 有写请求时
-//             pmem_write(waddr, wdata, wmask_expanded); // 使用扩展后的 wmask
-//         end else if (idu_mem_rden) begin // 有读请求时
-//             rdata = pmem_read(raddr);
-//         end else begin
-//             rdata = 0;
-//         end
-//     end
-// end
+`ifdef SIMULATION
+wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
+
+always @(*) begin
+    
+    check_regfile (flat_rf, pc);
+    check_finsih  (test_inst, s_a0zero);
+end
+
+always @(valid,wren,waddr,rden,raddr) begin
+    if (valid) begin
+        rdata = pmem_read(raddr);
+        if (wren) begin
+            pmem_write(waddr, wdata, wmask);
+        end
+    end else begin
+        rdata = 0;
+    end 
+end
+
+always@(posedge clk)begin
+    test_inst = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
+end
 
 `endif
+
 
 
 endmodule

@@ -3,7 +3,7 @@
 #include <memory/paddr.h>
 
 extern CPU_file cpu;
-
+extern NPC_state npc_state;
 uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
@@ -19,8 +19,11 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
-  panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
+  printf("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, (paddr_t)CONFIG_MBASE, (paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1, cpu.pc);
+  printf("\n");
+  npc_state.state = NPC_END;
+  npc_state.trap  = BAD_TRAP;
 }
 
 word_t real_paddr_read(paddr_t addr, int len) {
