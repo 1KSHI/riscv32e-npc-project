@@ -1,4 +1,4 @@
-module stl_reg #(
+module stl_reg_n #(
   WIDTH = 1,
   RESET_VAL = 0
 )(
@@ -9,7 +9,7 @@ module stl_reg #(
   output reg [WIDTH-1:0] o_dout
 );
 
-always @(posedge i_clk) begin
+always @(negedge i_clk) begin
   if (i_rst) begin
     o_dout <= RESET_VAL;
   end else if(i_wen) begin

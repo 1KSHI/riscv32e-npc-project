@@ -18,16 +18,14 @@ bool checkregs(CPU_file *ref, CPU_file *cpu) {
     printf("difftest error: ");
     printf("next reg pc is diff: ref = 0x%08x, cpu = 0x%08x\n",ref->pc,cpu->pc);
     return false;
-  } else {
-    printf("pc      | cpu = 0x%08x <---> ref = 0x%08x\n",cpu->pc,ref->pc);
-  }
+  } 
   for (int i = 0; i < ARRLEN(regs); i++) {
     if(ref->reg[i] != cpu->reg[i]){
       printf("difftest error at nextpc = 0x%08x, ",cpu->pc);
       printf("reg %s is diff: ref = 0x%08x, cpu = 0x%08x\n",regs[i],ref->reg[i],cpu->reg[i]);
       return false;
     } else if( cpu->reg[i]!=0){
-      printf("reg %3s | cpu = 0x%08x <---> ref = 0x%08x\n",regs[i],cpu->reg[i],ref->reg[i]);
+      printf("reg %3s | cpu = 0x%08x\n",regs[i],cpu->reg[i]);
     }
   }
   // for (int i = 0; i < ARRLEN(csrs); i++) {

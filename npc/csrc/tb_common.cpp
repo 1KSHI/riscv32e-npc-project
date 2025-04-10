@@ -10,6 +10,7 @@ void step_wave(){
   top->eval();
   contextp->timeInc(1);
   tfp->dump(contextp->time());
+  top->eval();
 }
 
 void single_cycle() {

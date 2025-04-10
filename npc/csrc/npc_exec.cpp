@@ -61,38 +61,35 @@ static void trace_and_difftest(vaddr_t pc) {
   difftest_step();
   
   #endif
-
-  
 }
 
 static void exec_once(vaddr_t pc) {
-  printf("--------------------------\n");
   // print_regs(false);
   watch_dog();
-
-  // #ifdef CONFIG_ITRACE
-  //     char asm_buf[128];
-  //     disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(top->inst), 4);
-  //     char first_part[12] = {0};
-  //     char second_part[20] = {0};
-  //     split_asm_buf(asm_buf, first_part, second_part);
-    
-  //     uint8_t *inst_bytes = (uint8_t *)&(top->inst);
-  //     snprintf(logbuf, sizeof(logbuf), "0x%08x: %-12s %-20s %02x %02x %02x %02x", 
-  //              pc, first_part , second_part, inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0]);
-  // #endif
-
-
+  int inst = paddr_read(pc, 4);
+  #ifdef CONFIG_ITRACE
+      char asm_buf[128];
+      disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(inst), 4);
+      char first_part[12] = {0};
+      char second_part[20] = {0};
+      split_asm_buf(asm_buf, first_part, second_part);
+      uint8_t *inst_bytes = (uint8_t *)&(inst);
+      snprintf(logbuf, sizeof(logbuf), "0x%08x: %02x %02x %02x %02x  %-6s %-10s", 
+               pc,  inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0],first_part , second_part);
+  #endif
 }
 
 static void execute(uint64_t n) {
   for (;n > 0; n --) {
+    
     exec_once(cpu.pc);
     g_nr_guest_inst ++;
     single_cycle();
     trace_and_difftest(cpu.pc);
-    if (npc_state.state != NPC_RUNNING) break;
     
+    
+    printf("--------------------------\n");
+    if (npc_state.state != NPC_RUNNING) break;
   }
 }
 

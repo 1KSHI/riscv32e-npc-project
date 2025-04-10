@@ -1,7 +1,7 @@
 `include "defines.v"
 `ifdef SIMULATION
 import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
-import "DPI-C" function void check_regfile(input logic [`REG_NUM*`CPU_WIDTH-1:0] regf,input int pc);
+import "DPI-C" function void check_regfile(input logic [`REG_NUM*`CPU_WIDTH-1:0] regf,input int pc,input int ifu_inst);
 import "DPI-C" function int pmem_read(input int raddr);
 import "DPI-C" function void pmem_write(input int waddr, input int wdata, input byte wmask);
 
@@ -9,16 +9,10 @@ import "DPI-C" function void pmem_write(input int waddr, input int wdata, input 
 
 module top(
     input                       clk,
-    input                       rst,
-    output reg [`CPU_WIDTH-1:0] pc
+    input                       rst
 );
-always @(posedge clk) begin
-    if (rst) begin
-        pc <= `CPU_WIDTH'h80000000;
-    end else begin
-        pc <= ifu_pc;
-    end
-end
+
+
 /* regfil module */
 
 wire [`CPU_WIDTH-1:0] reg_rs1_data;
@@ -74,7 +68,7 @@ idu idu(
     .i_clk          (clk         ),
     .i_rst          (rst         ),
     .i_ifu_pc       (ifu_pc      ),
-    .i_ifu_inst     (test_inst        ),
+    .i_ifu_inst     (ifu_inst        ),
     .o_idu_exop     (idu_exop    ),
     .o_idu_exsel    (idu_exsel   ),
     .o_idu_rs1_addr (idu_rs1_addr),
@@ -136,7 +130,10 @@ wire [`CPU_WIDTH-1:0] raddr = exu_aluout;
 wire [`CPU_WIDTH-1:0] waddr = exu_aluout;
 reg  [7:0]  wmask;
 reg  [`CPU_WIDTH-1:0] rdata;
-reg  [`CPU_WIDTH-1:0]test_inst;
+reg  [`CPU_WIDTH-1:0] ifu_inst;
+
+
+
 always @(*) begin
     if(idu_sten)begin
         case (idu_funct3)
@@ -153,11 +150,12 @@ wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
 
 always @(*) begin
     
-    check_regfile (flat_rf, pc);
-    check_finsih  (test_inst, s_a0zero);
+    ifu_inst = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
+    check_regfile (flat_rf, ifu_pc , ifu_inst);
+    check_finsih  (ifu_inst, s_a0zero);
 end
 
-always @(valid,wren,waddr,rden,raddr) begin
+always @(wren,wdata,rden,raddr,clk) begin
     if (valid) begin
         rdata = pmem_read(raddr);
         if (wren) begin
@@ -165,12 +163,10 @@ always @(valid,wren,waddr,rden,raddr) begin
         end
     end else begin
         rdata = 0;
-    end 
+    end  
 end
 
-always@(posedge clk)begin
-    test_inst = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
-end
+
 
 `endif
 

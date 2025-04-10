@@ -35,7 +35,7 @@ genvar i;
 generate
     for (i = 1; i < `REG_NUM; i = i + 1) begin: regf
         assign rfwen[i] = i_en && i_idu_waddr == i;
-        stl_reg #(
+        stl_reg_p #(
             .WIDTH     (`CPU_WIDTH   ),
             .RESET_VAL (`CPU_WIDTH'b0)
         ) stl_reg (
