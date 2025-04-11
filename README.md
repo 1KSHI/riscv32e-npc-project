@@ -5,4 +5,4 @@ my own repository of ysyx project
 main：README  
 pa0：预学习  
 pa1：nemu  
-pa2：npc  
+pa2：npc （目前进度）  
