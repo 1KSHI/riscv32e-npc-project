@@ -115,58 +115,37 @@ bru bru(
     .i_idu_jal      (idu_jal     ),
     .i_idu_jalr     (idu_jalr    ),
     .i_idu_brch     (idu_brch    ),
-    .i_bru_rs1_data (reg_rs1_data),
+    .i_reg_rs1_data (reg_rs1_data),
+    .i_reg_rs2_data (reg_rs2_data),
+    .i_idu_funct3   (idu_funct3  ),
     .o_bru_next_pc  (bru_next_pc )
 );
 
+/* mem module */
 
-
-
-wire rden   = idu_lden;
-wire wren   = idu_sten;
-wire valid  = (idu_lden | idu_sten);
-wire [`CPU_WIDTH-1:0] wdata = reg_rs2_data;
-wire [`CPU_WIDTH-1:0] raddr = exu_aluout;
-wire [`CPU_WIDTH-1:0] waddr = exu_aluout;
-reg  [7:0]  wmask;
 reg  [`CPU_WIDTH-1:0] rdata;
+
+mem mem(
+    .i_clk      (clk         ),
+    .rden       (idu_lden    ),
+    .wren       (idu_sten    ),
+    .wdata      (reg_rs2_data),
+    .exu_aluout (exu_aluout  ),
+    .idu_funct3 (idu_funct3  ),
+    .rdata      (rdata       )
+);
+
 reg  [`CPU_WIDTH-1:0] ifu_inst;
 
-
-
-always @(*) begin
-    if(idu_sten)begin
-        case (idu_funct3)
-            3'b000: wmask = 8'h01; // byte
-            3'b001: wmask = 8'h03; // half
-            3'b010: wmask = 8'h0F; // word
-            default: wmask = 8'h00; // default
-        endcase
-    end
-end
-
 `ifdef SIMULATION
+
 wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
 
 always @(*) begin
-    
     ifu_inst = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
     check_regfile (flat_rf, ifu_pc , ifu_inst);
     check_finsih  (ifu_inst, s_a0zero);
 end
-
-always @(wren,wdata,rden,raddr,clk) begin
-    if (valid) begin
-        rdata = pmem_read(raddr);
-        if (wren) begin
-            pmem_write(waddr, wdata, wmask);
-        end
-    end else begin
-        rdata = 0;
-    end  
-end
-
-
 
 `endif
 

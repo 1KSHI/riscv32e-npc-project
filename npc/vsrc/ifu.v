@@ -9,7 +9,7 @@ module ifu(
 
 reg [`CPU_WIDTH-1:0] next_pc_r;
 
-stl_reg_p #(
+stl_reg #(
     .WIDTH     (`CPU_WIDTH          ),
     .RESET_VAL (`CPU_WIDTH'h80000000)
 ) prereg (

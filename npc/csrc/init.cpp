@@ -5,13 +5,11 @@ char *img_file = NULL;
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 
-
-
 extern void init_disasm(); // 初始化反汇编器
 static int parse_args(int argc, char *argv[]);
 static long load_img(char *img_file);
 void init_sdb();
-
+extern void sdb_set_batch_mode();
 void npc_init(int argc, char *argv[]) {
   // Parse arguments.
   parse_args(argc, argv);
@@ -34,6 +32,7 @@ void npc_init(int argc, char *argv[]) {
 
 static int parse_args(int argc, char *argv[]) {
   const struct option table[] = {
+    {"batch"    , no_argument      , NULL, 'b'},
     {"img"      , required_argument, NULL, 'i'},
     {"diff"     , required_argument, NULL, 'd'},
     {"log"      , required_argument, NULL, 'l'},
@@ -42,6 +41,7 @@ static int parse_args(int argc, char *argv[]) {
   int o;
   while ( (o = getopt_long(argc, argv, "-d:i:l", table, NULL)) != -1) {
     switch (o) {
+      case 'b': sdb_set_batch_mode(); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
       case 'i': img_file = optarg; break;
@@ -67,16 +67,16 @@ static long load_img(char *img_file) {
   long size = ftell(fp);
   printf("\n------- image info -------\n\n");
   printf("The image is %s\n", img_file);
-  printf("The size  is %ld\n", size);
-  printf("\n------- memory info ------\n\n");
+  // printf("The size  is %ld\n", size);
+  // printf("\n------- memory info ------\n\n");
   fseek(fp, 0, SEEK_SET);
   int ret = fread(pmem, size, 1, fp);
   assert(ret == 1);
 
-  for(uint32_t i=0;i<size;i=i+4){
-    printf("0x%08x, 0x%08x\n",PMEM_START+i,paddr_read(PMEM_START+i,4));
-  }
-  printf("\n-------- reg info --------\n\n");
+  // for(uint32_t i=0;i<size;i=i+4){
+  //   printf("0x%08x, 0x%08x\n",PMEM_START+i,paddr_read(PMEM_START+i,4));
+  // }
+  // printf("\n-------- reg info --------\n\n");
 
   fclose(fp);
   return size;

@@ -7,6 +7,7 @@
 
 
 extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte); // 反汇编函数
+extern int is_batch_mode;
 
 #define MAX_INST_TO_PRINT 200
 #define RINGBUF_SIZE 20
@@ -15,8 +16,9 @@ bool init_flag = false;
 
 extern NPC_state npc_state;
 extern CPU_file cpu;
+CPU_file last_cpu;
 extern Vtop* top;
-extern void watch_dog();
+extern int watch_dog();
 char logbuf[128];
 bool diff_skip    = false;
 uint64_t g_nr_guest_inst = 0;
@@ -52,22 +54,26 @@ static void trace_and_difftest(vaddr_t pc) {
   // IFDEF(CONFIG_DIFFTEST, difftest_step(pc, dnpc));
 
   #if DIFFTEST_ON
-  diff_cpdutreg2ref();
+  // diff_cpdutreg2ref();
   if(!difftest_check()){
     print_regs(false);
     npc_state.state = NPC_END;
     npc_state.trap  = BAD_TRAP;
   }
+  
   difftest_step();
   
   #endif
+
+  
 }
 
 static void exec_once(vaddr_t pc) {
   // print_regs(false);
-  watch_dog();
+  
   int inst = paddr_read(pc, 4);
   #ifdef CONFIG_ITRACE
+  if(!is_batch_mode){
       char asm_buf[128];
       disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(inst), 4);
       char first_part[12] = {0};
@@ -76,6 +82,7 @@ static void exec_once(vaddr_t pc) {
       uint8_t *inst_bytes = (uint8_t *)&(inst);
       snprintf(logbuf, sizeof(logbuf), "0x%08x: %02x %02x %02x %02x  %-6s %-10s", 
                pc,  inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0],first_part , second_part);
+  }
   #endif
 }
 
@@ -83,13 +90,20 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     
     exec_once(cpu.pc);
+    last_cpu = cpu;
     g_nr_guest_inst ++;
     single_cycle();
-    trace_and_difftest(cpu.pc);
+    trace_and_difftest(last_cpu.pc);
+    //printf("cpu.pc = 0x%08x, cpu.reg = 0x%08x\n",last_cpu.pc,cpu.reg[2]);
     
     
-    printf("--------------------------\n");
-    if (npc_state.state != NPC_RUNNING) break;
+    // if(watch_dog()) {
+    //   npc_state.state = NPC_ABORT;
+    //   npc_state.trap  = BAD_TRAP;
+    //   break;
+    // }
+    if(!is_batch_mode) printf("--------------------------\n");
+    if (npc_state.state != NPC_RUNNING) {break;}
   }
 }
 
@@ -134,6 +148,6 @@ void cpu_exec(uint64_t n) {
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           cpu.pc);
       // fall through
-    case NPC_QUIT: statistic();single_cycle();
+    case NPC_QUIT: statistic();
   }
 }

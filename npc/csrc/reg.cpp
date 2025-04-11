@@ -1,7 +1,7 @@
 #include "include/include.h"
 
 extern CPU_file cpu;
-
+extern int is_batch_mode;
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
   "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
@@ -24,7 +24,7 @@ bool checkregs(CPU_file *ref, CPU_file *cpu) {
       printf("difftest error at nextpc = 0x%08x, ",cpu->pc);
       printf("reg %s is diff: ref = 0x%08x, cpu = 0x%08x\n",regs[i],ref->reg[i],cpu->reg[i]);
       return false;
-    } else if( cpu->reg[i]!=0){
+    } else if( !is_batch_mode && cpu->reg[i]!=0){
       printf("reg %3s | cpu = 0x%08x\n",regs[i],cpu->reg[i]);
     }
   }

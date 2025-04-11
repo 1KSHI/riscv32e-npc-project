@@ -6,16 +6,17 @@ CPU_file cpu;
 VerilatedContext* contextp = NULL;
 VerilatedVcdC* tfp = NULL;
 Vtop* top;
-
+extern int is_batch_mode;
 void sdb_mainloop();
 
-void watch_dog() {
+int watch_dog() {
   static int count = 0;
   count ++;
-  if (count > 100) {
+  if (count > 100000) {
       printf("watch dog timeout\n");
-      sim_exit();
+      return 1;
   }
+  return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -25,6 +26,9 @@ int main(int argc, char *argv[]) {
     while (npc_state.state == NPC_RUNNING) {
         sdb_mainloop();
     }  
+    if(is_batch_mode && npc_state.trap == BAD_TRAP) {
+        return 1;
+    }
     sim_exit();
 
     return 0;

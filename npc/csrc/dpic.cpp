@@ -39,5 +39,5 @@ extern "C" void pmem_write(int waddr, int wdata, char wmask) {
     }
   }
 
-  printf("pc: %x , waddr: %x , wdata:%x , mem data:%x\n",cpu.pc,waddr,wdata,paddr_read(waddr, 4));
+  //printf("pc: %x , waddr: %x , wdata:%x , mem data:%x\n",cpu.pc,waddr,wdata,paddr_read(waddr, 4));
 }

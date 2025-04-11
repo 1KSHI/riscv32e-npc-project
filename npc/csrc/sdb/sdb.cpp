@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int is_batch_mode = false;
+int is_batch_mode = false;
 extern NPC_state npc_state;
 void init_regex();
 void init_wp_pool();
@@ -229,11 +229,6 @@ void sdb_mainloop() {
       args = NULL;
     }
 
-#ifdef CONFIG_DEVICE
-    extern void sdl_clear_event_queue();
-    sdl_clear_event_queue();
-#endif
-
     int i;
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(cmd, cmd_table[i].name) == 0) {
@@ -246,7 +241,11 @@ void sdb_mainloop() {
     }
 
     if (i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
+
+
   }
+
+  
 }
 
 void init_sdb() {
