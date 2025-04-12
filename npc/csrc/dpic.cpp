@@ -22,7 +22,7 @@ extern "C" void check_regfile(const uint64_t* regf,int pc,int inst){
   }
 }
 
-extern "C" int pmem_read(int raddr){
+extern "C" long pmem_read(int raddr){
   paddr_t aligned_addr = raddr & ~0x3u;
   //printf("raddr: %x , rdata:%x\n",raddr ,paddr_read(aligned_addr, 4));
   return paddr_read(aligned_addr, 4);
