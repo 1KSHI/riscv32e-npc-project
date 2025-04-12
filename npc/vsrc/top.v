@@ -2,7 +2,7 @@
 `ifdef SIMULATION
 import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
 import "DPI-C" function void check_regfile(input logic [`REG_NUM*`CPU_WIDTH-1:0] regf,input int pc,input int ifu_inst);
-import "DPI-C" function int pmem_read(input int raddr);
+import "DPI-C" function longint pmem_read(input int raddr);
 import "DPI-C" function void pmem_write(input int waddr, input int wdata, input byte wmask);
 
 `endif
@@ -68,7 +68,7 @@ idu idu(
     .i_clk          (clk         ),
     .i_rst          (rst         ),
     .i_ifu_pc       (ifu_pc      ),
-    .i_ifu_inst     (ifu_inst        ),
+    .i_ifu_inst     (ifu_inst    ),
     .o_idu_exop     (idu_exop    ),
     .o_idu_exsel    (idu_exsel   ),
     .o_idu_rs1_addr (idu_rs1_addr),
@@ -135,14 +135,16 @@ mem mem(
     .rdata      (rdata       )
 );
 
-reg  [`CPU_WIDTH-1:0] ifu_inst;
+reg [`INS_WIDTH*2-1:0] ifu_inst_temp;
+reg [`INS_WIDTH-1:0] ifu_inst;
 
 `ifdef SIMULATION
 
 wire [`REG_NUM*`CPU_WIDTH-1:0] flat_rf;
 
 always @(*) begin
-    ifu_inst = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
+    ifu_inst_temp = pmem_read(rst?`CPU_WIDTH'h80000000:ifu_pc);
+    ifu_inst = ifu_inst_temp[31:0];
     check_regfile (flat_rf, ifu_pc , ifu_inst);
     check_finsih  (ifu_inst, s_a0zero);
 end
