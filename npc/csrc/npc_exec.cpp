@@ -55,13 +55,14 @@ static void trace_and_difftest(vaddr_t pc) {
 
   #if DIFFTEST_ON
   // diff_cpdutreg2ref();
+  
   if(!difftest_check()){
     print_regs(false);
     npc_state.state = NPC_END;
     npc_state.trap  = BAD_TRAP;
   }
-  
   difftest_step();
+  
   
   #endif
 
@@ -90,20 +91,19 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     
     exec_once(cpu.pc);
-    last_cpu = cpu;
     g_nr_guest_inst ++;
+    trace_and_difftest(cpu.pc);
+    if (npc_state.state != NPC_RUNNING) {break;}
     single_cycle();
-    trace_and_difftest(last_cpu.pc);
-    //printf("cpu.pc = 0x%08x, cpu.reg = 0x%08x\n",last_cpu.pc,cpu.reg[2]);
-    
-    
+    print_regs(false);
+    if(!is_batch_mode) printf("--------------------------\n");
+    //printf("cpu.pc = 0x%08x, cpu.reg = 0x%08x\n",cpu.pc,cpu.reg[2]);
     // if(watch_dog()) {
     //   npc_state.state = NPC_ABORT;
     //   npc_state.trap  = BAD_TRAP;
     //   break;
     // }
-    if(!is_batch_mode) printf("--------------------------\n");
-    if (npc_state.state != NPC_RUNNING) {break;}
+    
   }
 }
 

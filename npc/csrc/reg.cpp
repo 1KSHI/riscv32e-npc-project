@@ -24,8 +24,6 @@ bool checkregs(CPU_file *ref, CPU_file *cpu) {
       printf("difftest error at nextpc = 0x%08x, ",cpu->pc);
       printf("reg %s is diff: ref = 0x%08x, cpu = 0x%08x\n",regs[i],ref->reg[i],cpu->reg[i]);
       return false;
-    } else if( !is_batch_mode && cpu->reg[i]!=0){
-      printf("reg %3s | cpu = 0x%08x\n",regs[i],cpu->reg[i]);
     }
   }
   // for (int i = 0; i < ARRLEN(csrs); i++) {
@@ -39,15 +37,10 @@ bool checkregs(CPU_file *ref, CPU_file *cpu) {
 }
 
 void print_regs(bool all){
-  printf("cpu      pc = 0x%08x\n",cpu.pc);
+  //printf("cpu      pc = 0x%08x\n",cpu.pc);
   for (int i = 0; i < ARRLEN(regs); i++) {
-    if(cpu.reg[i]!=0|all){
-      printf("cpu reg %3s = 0x%08x\n",regs[i],cpu.reg[i]);
-    }
-  }
-  for(int i = 0; i < ARRLEN(csrs); i++){
-    if(cpu.csr[i]!=0|all){
-      printf("cpu csr %3s = 0x%08x\n",csrs[i],cpu.csr[i]);
+    if( !is_batch_mode && cpu.reg[i]!=0){
+      printf("reg %3s | cpu = 0x%08x\n",regs[i],cpu.reg[i]);
     }
   }
   

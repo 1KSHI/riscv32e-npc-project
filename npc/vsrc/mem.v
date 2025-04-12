@@ -16,6 +16,7 @@ wire valid  = (rden | wren);
 wire [`CPU_WIDTH-1:0] raddr = exu_aluout;
 wire [`CPU_WIDTH-1:0] waddr = exu_aluout;
 reg [7:0]   wmask;
+reg [`CPU_WIDTH-1:0] rdata_mem;
 
 always @(*) begin
     if(wren)begin
@@ -28,14 +29,29 @@ always @(*) begin
     end
 end
 
+always @(*) begin
+    rdata = 32'b0; // 默认值，避免锁存器
+    if(rden)begin
+        case (idu_funct3)
+            3'b000: rdata = {{24{rdata_mem[7]}}, rdata_mem[7:0]}; // byte
+            3'b001: rdata = {{16{rdata_mem[15]}}, rdata_mem[15:0]}; // half
+            3'b010: rdata = rdata_mem; // word
+            3'b100: rdata = {{24{1'b0}}, rdata_mem[7:0]}; // ubyte
+            3'b101: rdata = {{16{1'b0}}, rdata_mem[15:0]}; // uhalf
+            3'b110: rdata = rdata_mem; // uword
+            default: rdata = 32'b0; // default
+        endcase
+    end
+end
+
 always @(wren,wdata,waddr,rden,raddr,i_clk) begin
     if (valid) begin
-        rdata <= pmem_read(raddr);
+        rdata_mem <= pmem_read(raddr);
         if (wren) begin
             pmem_write(waddr, wdata, wmask);
         end
     end else begin
-        rdata <= 0;
+        rdata_mem <= 0;
     end  
 end
 

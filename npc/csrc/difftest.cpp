@@ -4,8 +4,8 @@
 
 #if  DIFFTEST_ON
 
-extern CPU_file last_cpu;
-
+extern CPU_file cpu;
+CPU_file ref;
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF};
 void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) = NULL;
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
@@ -38,15 +38,14 @@ void difftest_init(char *ref_so_file, long img_size) {
 
   ref_difftest_memcpy(PMEM_START,guest_to_host(PMEM_START), img_size, DIFFTEST_TO_REF);
 
-  last_cpu.pc = INST_START;
-  ref_difftest_regcpy(&last_cpu, DIFFTEST_TO_REF);
+  cpu.pc = INST_START;
+  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 
 }
 
 bool difftest_check() {
-  CPU_file ref;
   ref_difftest_regcpy(&ref, DIFFTEST_TO_DUT);
-  return checkregs(&ref, &last_cpu);
+  return checkregs(&ref, &cpu);
 }
 
 void difftest_step() {
@@ -54,7 +53,7 @@ void difftest_step() {
 }
 
 void diff_cpdutreg2ref() {
-  ref_difftest_regcpy(&last_cpu, DIFFTEST_TO_REF);
+  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 }
 
 #endif

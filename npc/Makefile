@@ -21,7 +21,7 @@ TIMING_RPT = $(RESULT_DIR)/$(TOP_MODULE).rpt
 
 # 3.run info: 
 LOG ?= $(NPC_HOME)/build/npc-log.txt
-IMG ?= ../am-kernels/tests/cpu-tests/build/mersenne-riscv32-nemu.bin	# program img, run on npc.
+IMG ?= ../am-kernels/tests/cpu-tests/build/bit-riscv32-nemu.bin	# program img, run on npc.
 DIFFTEST ?= ${NEMU_HOME}/build/riscv32-nemu-interpreter-so#			# nemu img, use for difftest.
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
