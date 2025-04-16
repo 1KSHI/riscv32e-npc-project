@@ -28,7 +28,7 @@ OBJ_DIR = $(BUILD_DIR)/obj_dir
 INC_PATH = $(OBJ_DIR)
 BIN = $(BUILD_DIR)/$(TOP_MODULE)
 RUN_FLAG += --img=$(IMG) --log=$(LOG) --diff=$(DIFFTEST)
-RUN_FLAG += --batch
+#RUN_FLAG += --batch
 NPC_EXEC = $(BIN) $(RUN_FLAG)
 
 # 4.verilator flags:

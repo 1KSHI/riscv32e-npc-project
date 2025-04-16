@@ -44,15 +44,15 @@ always @(*) begin
     rdata = 32'b0;
     if (rden) begin
         case (idu_funct3)
-            // 字节加载（LB/LBU）
-            3'b000: rdata = {{24{selected_data[7]}}, selected_data[7:0]};  // 符号扩展
-            3'b100: rdata = {24'b0, selected_data[7:0]};                  // 无符号扩展
-            // 半字加载（LH/LHU）
-            3'b001: rdata = {{16{selected_data[15]}}, selected_data[15:0]}; // 符号扩展
-            3'b101: rdata = {16'b0, selected_data[15:0]};                   // 无符号扩展
-            // 字加载（LW/LWU）
-            3'b010: rdata = selected_data;                                 // 直接取 32 位
-            3'b110: rdata = selected_data;                                 // 直接取 32 位
+            // （LB/LBU）
+            3'b000: rdata = {{24{selected_data[7]}}, selected_data[7:0]};  
+            3'b100: rdata = {24'b0, selected_data[7:0]};                 
+            // （LH/LHU）
+            3'b001: rdata = {{16{selected_data[15]}}, selected_data[15:0]};
+            3'b101: rdata = {16'b0, selected_data[15:0]};                  
+            // （LW/LWU）
+            3'b010: rdata = selected_data;                                 
+            3'b110: rdata = selected_data;                                 
             default: rdata = 32'b0;
         endcase
     end
@@ -60,9 +60,9 @@ end
 
 always @(valid,wren,wdata,waddr,rden,raddr,i_clk) begin
     if (valid) begin
-        rdata_mem <= pmem_read(raddr); // 读取 64 位（两个对齐块）
+        rdata_mem <= pmem_read(raddr);
         if (wren) begin
-            pmem_write(waddr, wdata, wmask); // 写入逻辑不变
+            pmem_write(waddr, wdata, wmask);
         end
     end else begin
         rdata_mem <= 64'b0;
