@@ -57,10 +57,11 @@ void ringbuf_write(const char *logbuf) {
 
 void iring_check(Decode *_this){
   char formatted_logbuf[133];
-  if(nemu_state.state == NEMU_ABORT || nemu_state.halt_ret != 0){
+  if(nemu_state.state != NEMU_RUNNING || nemu_state.halt_ret != 0){
     snprintf(formatted_logbuf, sizeof(formatted_logbuf), "---> %s", _this->logbuf);
     ringbuf_write(formatted_logbuf);
     for(int i=0; i<RINGBUF_SIZE; i++){
+      log_write("------------------------------------\n");
       log_write("%s\n", ringbuf.buffer[(ringbuf.tail + i) % RINGBUF_SIZE]);
     }
   } else {
@@ -72,6 +73,7 @@ void iring_check(Decode *_this){
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
+  log_write("------------------------------------\n");
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
 

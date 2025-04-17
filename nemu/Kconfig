@@ -147,18 +147,23 @@ config ITRACE
   default y
 
 config ITRACE_COND
-  depends on ITRACE && !IRINGBUF_COND
+  depends on ITRACE
   string "Only trace instructions when the condition is true"
   default "true"
 
 config IRINGBUF_COND
-  depends on ITRACE
+  depends on ITRACE && !MTRACE && !DTRACE && !ITRACE_COND
   bool "Enable ring buffer"
   default "false"
 
 config MTRACE
-  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER && !ITRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
   bool "Enable memory tracer"
+  default n
+
+config DTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
+  bool "Enable device tracer"
   default n
 
 config FTRACE
