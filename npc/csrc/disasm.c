@@ -15,7 +15,7 @@
 
 #include <dlfcn.h>
 #include <capstone/capstone.h>
-#include <common.h>
+#include "common.h"
 
 
 

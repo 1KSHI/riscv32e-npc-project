@@ -1,10 +1,11 @@
 #include "include/include.h"
-#include <common.h>
+#include "common.h"
 #include <getopt.h>
 char *img_file = NULL;
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 
+void init_device();
 extern void init_disasm(); // 初始化反汇编器
 static int parse_args(int argc, char *argv[]);
 static long load_img(char *img_file);
@@ -22,6 +23,8 @@ void npc_init(int argc, char *argv[]) {
   init_log(log_file);
 
   init_sdb();
+
+  init_device();
 
   #if  DIFFTEST_ON
   // Initialize differential testing.

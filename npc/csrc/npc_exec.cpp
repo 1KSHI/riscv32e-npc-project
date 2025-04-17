@@ -1,5 +1,5 @@
 #include <locale.h>
-#include <common.h>
+#include "common.h"
 #include "include.h"
 #include "tb_common.h"
 #include <utils.h>
@@ -43,6 +43,7 @@ static void split_asm_buf(const char *asm_buf, char *first_part, char *second_pa
 
 static void trace_and_difftest(vaddr_t pc) {
   #ifdef CONFIG_ITRACE
+    log_write("---------------------------------------\n");
     log_write("%s\n", logbuf);
   #endif
   
@@ -54,14 +55,18 @@ static void trace_and_difftest(vaddr_t pc) {
   // IFDEF(CONFIG_DIFFTEST, difftest_step(pc, dnpc));
 
   #if DIFFTEST_ON
-  // diff_cpdutreg2ref();
-  
-  if(!difftest_check()){
+
+  if(diff_skip_r){ 
+    diff_cpdutreg2ref();
+  }else if (!difftest_check()){
     print_regs(false);
     npc_state.state = NPC_END;
     npc_state.trap  = BAD_TRAP;
   }
-  difftest_step();
+  if(!diff_skip){
+    difftest_step();
+  }
+  diff_skip_r = diff_skip;
   
   
   #endif
@@ -74,7 +79,7 @@ static void exec_once(vaddr_t pc) {
   
   int inst = paddr_read(pc, 4);
   #ifdef CONFIG_ITRACE
-  if(!is_batch_mode){
+  
       char asm_buf[128];
       disassemble(asm_buf, sizeof(asm_buf), pc, (uint8_t *)&(inst), 4);
       char first_part[12] = {0};
@@ -83,7 +88,6 @@ static void exec_once(vaddr_t pc) {
       uint8_t *inst_bytes = (uint8_t *)&(inst);
       snprintf(logbuf, sizeof(logbuf), "0x%08x: %02x %02x %02x %02x  %-6s %-10s", 
                pc,  inst_bytes[3], inst_bytes[2], inst_bytes[1], inst_bytes[0],first_part , second_part);
-  }
   #endif
 }
 

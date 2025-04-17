@@ -21,14 +21,14 @@ TIMING_RPT = $(RESULT_DIR)/$(TOP_MODULE).rpt
 
 # 3.run info: 
 LOG ?= $(NPC_HOME)/build/npc-log.txt
-IMG ?= ../am-kernels/tests/cpu-tests/build/bit-riscv32-nemu.bin	# program img, run on npc.
+IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv32e-npc.bin	# program img, run on npc.
 DIFFTEST ?= ${NEMU_HOME}/build/riscv32-nemu-interpreter-so#			# nemu img, use for difftest.
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 INC_PATH = $(OBJ_DIR)
 BIN = $(BUILD_DIR)/$(TOP_MODULE)
 RUN_FLAG += --img=$(IMG) --log=$(LOG) --diff=$(DIFFTEST)
-#RUN_FLAG += --batch
+RUN_FLAG += --batch
 NPC_EXEC = $(BIN) $(RUN_FLAG)
 
 # 4.verilator flags:
@@ -36,12 +36,14 @@ INCFLAGS += $(addprefix -I, $(INC_PATH))
 INCFLAGS += -I$(abspath $(NEMU_HOME)/tools/capstone/repo/include) 
 INCFLAGS += -I$(abspath ./csrc/include) 
 INCFLAGS += -I$(abspath ./csrc/include/memory)
+INCFLAGS += -I$(abspath ./csrc/include/device)
 CXXFLAGS += $(INCFLAGS) -DTOP_MODULE="\"V$(TOP_MODULE)\""
 CXXFLAGS += -fpermissive
 VERILATOR_CFLAGS += -MMD --build -cc --trace -j -O3 --x-assign fast --x-initial fast --noassert
 VERILATOR_CFLAGS += -I${SEARCHPATH}
 VERILATOR_CFLAGS += -DSIMULATION
 LDFLAGS += -lreadline /home/k-shi/ysyx/ysyx-workbench/nemu/tools/capstone/repo/libcapstone.so.5
+LDFLAGS	+= -ldl -lSDL2 # -ldl for dynamic link(nemu difftest).
 
 .PHONY:run gdb wave clean
 

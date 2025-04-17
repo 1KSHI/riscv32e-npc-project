@@ -1,6 +1,9 @@
 #include "include.h"
 #include <memory/host.h>
 #include <memory/paddr.h>
+#include <device/mmio.h>
+#include <utils.h>
+
 
 extern CPU_file cpu;
 extern NPC_state npc_state;
@@ -35,16 +38,11 @@ word_t real_paddr_read(paddr_t addr, int len) {
 
 word_t paddr_read(paddr_t addr, int len) {
   word_t data = real_paddr_read(addr,len);
-#ifdef CONFIG_MTRACE
-  printf("tracing read  memory, addr = "FMT_PADDR", data = "FMT_WORD"\n",addr,data);
-#endif
   return data;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-#ifdef CONFIG_MTRACE
-  printf("tracing write memory, addr = "FMT_PADDR", data = "FMT_WORD"\n",addr,data);
-#endif
+
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);

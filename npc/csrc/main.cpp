@@ -1,12 +1,15 @@
 #include "include/tb_common.h"
 #include "include/include.h"
 
-NPC_state npc_state = {NPC_RUNNING,BAD_TRAP};
-CPU_file cpu;
+NPC_state npc_state = {NPC_RUNNING,BAD_TRAP};// check npc state
+CPU_file cpu;// follow the pc reg change in npc
+
 VerilatedContext* contextp = NULL;
 VerilatedVcdC* tfp = NULL;
 Vtop* top;
+
 extern int is_batch_mode;
+
 void sdb_mainloop();
 
 int watch_dog() {
