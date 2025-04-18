@@ -79,16 +79,18 @@ extern "C" long pmem_read(int raddr){
   if (dev != static_cast<device_type>(-1)) {
     switch (dev) {
       case SERIAL:break;
-      case RTC:data = paddr_read(raddr, 4);printf("time: %d\n",data);break;
+      case RTC:data = paddr_read(raddr, 4);break;
       case VGACTL:break;
       case VMEM:break;
-      case KEYBOARD:break;
+      case KEYBOARD:paddr_read(raddr, 4);break;
       case AUDIO:break;
       case AUDIO_SBUF:break;
       default:printf("Unknown device type\n");break;
     }
+    #if CONFIG_DTRACE
+    log_write("read  device: %s, addr = %08x, data = %02x\n", mmio_maps[dev].name, raddr, data);
+    #endif
     diff_skip = true;
-    //printf("MMIO device: %s, addr = %08x, data = %02x\n", mmio_maps[dev].name, raddr, data);
   }else{
     paddr_t aligned_addr = raddr & ~0x3u;
     paddr_t data_1 = paddr_read(aligned_addr, 4);
@@ -114,6 +116,9 @@ extern "C" void pmem_write(int waddr, int wdata, char wmask) {
       case AUDIO_SBUF:break;
       default:printf("Unknown device type\n");break;
     }
+    #if CONFIG_DTRACE
+    log_write("write device: %s, addr = %08x, data = %02x\n", mmio_maps[dev].name, waddr, wdata);
+    #endif
     diff_skip = true;
   }
   for (int i = 0; i < 8; i++) {

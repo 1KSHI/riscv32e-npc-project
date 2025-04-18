@@ -30,6 +30,7 @@ static void out_of_bound(paddr_t addr) {
 }
 
 word_t real_paddr_read(paddr_t addr, int len) {
+
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
@@ -38,13 +39,17 @@ word_t real_paddr_read(paddr_t addr, int len) {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  //if(addr==0x80000000){log_write("read addr: %08x\n",addr);}
+  #if CONFIG_MTRACE
+  //log_write("read addr: %08x\n",addr);
+  #endif
   word_t data = real_paddr_read(addr,len);
   return data;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
+  #if CONFIG_MTRACE
   //log_write("write addr: %08x\n",addr);
+  #endif
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
