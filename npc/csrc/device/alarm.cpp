@@ -1,4 +1,4 @@
-#include "common.h"
+#include <common.h>
 #include <device/alarm.h>
 #include <sys/time.h>
 #include <signal.h>

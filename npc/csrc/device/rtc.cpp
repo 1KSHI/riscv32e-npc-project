@@ -2,12 +2,12 @@
 #include <device/alarm.h>
 #include <utils.h>
 
-extern NPC_state npc_state;
 static uint32_t *rtc_port_base = NULL;
 
 static void rtc_io_handler(uint32_t offset, int len, bool is_write) {
+  // printf("rtc_io_handler. offset == %d, len == %d, is_write == %d\n",offset,len,is_write);
   assert(offset == 0 || offset == 4);
-  if (!is_write && offset == 4) {
+  if (!is_write) {
     uint64_t us = get_time();
     rtc_port_base[0] = (uint32_t)us;
     rtc_port_base[1] = us >> 32;
@@ -16,10 +16,8 @@ static void rtc_io_handler(uint32_t offset, int len, bool is_write) {
 
 #ifndef CONFIG_TARGET_AM
 static void timer_intr() {
-  if (npc_state.state == NPC_RUNNING) {
-    extern void dev_raise_intr();
-    dev_raise_intr();
-  }
+  extern void dev_raise_intr();
+  dev_raise_intr();
 }
 #endif
 

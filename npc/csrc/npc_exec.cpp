@@ -67,6 +67,7 @@ static void trace_and_difftest(vaddr_t pc) {
     difftest_step();
   }
   diff_skip_r = diff_skip;
+  diff_skip = false;
   
   
   #endif

@@ -58,14 +58,14 @@ always @(*) begin
     end
 end
 
-always @(valid,wren,wdata,waddr,rden,raddr,i_clk) begin
-    if (valid) begin
+always @(wren,waddr,wdata,rden,raddr) begin
+    if (rden) begin
         rdata_mem <= pmem_read(raddr);
-        if (wren) begin
-            pmem_write(waddr, wdata, wmask);
-        end
     end else begin
         rdata_mem <= 64'b0;
+    end
+    if (wren) begin
+        pmem_write(waddr, wdata, wmask);
     end
 end
 

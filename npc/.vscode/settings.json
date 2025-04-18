@@ -8,6 +8,8 @@
 		"paddr.h": "c",
 		"ratio": "cpp",
 		"capstone.h": "c",
-		"random": "cpp"
+		"random": "cpp",
+		"array": "cpp",
+		"string_view": "cpp"
 	}
 }

@@ -68,7 +68,7 @@ static long load_img(char *img_file) {
 
   fseek(fp, 0, SEEK_END); // move cur to end.
   long size = ftell(fp);
-  printf("\n------- image info -------\n\n");
+  printf("\n------- image info -------\n");
   printf("The image is %s\n", img_file);
   // printf("The size  is %ld\n", size);
   // printf("\n------- memory info ------\n\n");
