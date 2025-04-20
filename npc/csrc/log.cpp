@@ -11,10 +11,10 @@ void init_log(const char *log_file) {
     log_fp = fp;
   }
   Log("Log is written to %s", log_file ? log_file : "stdout");
-#ifdef CONFIG_ITRACE_COND
-  void init_iringbuf(); // declaration
-  init_iringbuf(); //add by dingyawei , init iringbuf;
-#endif
+// #ifdef CONFIG_ITRACE_COND
+//   void init_iringbuf(); // declaration
+//   init_iringbuf(); //add by dingyawei , init iringbuf;
+// #endif
 }
 
 bool log_enable() {

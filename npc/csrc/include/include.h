@@ -52,7 +52,7 @@ void print_one_regs(char *reg);
 bool checkregs(CPU_file *ref, CPU_file *cpu);
 word_t reg_str2val(const char *s, bool *success);
 void init_log(const char *log_file); 
-
+void log_regs(bool all);
 #ifdef DIFFTEST_ON
 void difftest_init(char *ref_so_file, long img_size);
 bool difftest_check();

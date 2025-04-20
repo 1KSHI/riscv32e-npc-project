@@ -33,7 +33,7 @@ extern CPU_state cpu;
 void isa_reg_display();
 void isa_reg_display_one(char *reg);
 word_t isa_reg_str2val(const char *name, bool *success);
-
+void log_reg_write();
 // exec
 struct Decode;
 int isa_exec_once(struct Decode *s);

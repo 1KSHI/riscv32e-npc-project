@@ -31,9 +31,15 @@ void sim_init(){
   contextp = new VerilatedContext;
   tfp = new VerilatedVcdC;
   top = new Vtop;
+  
+  
+  #if CONFIG_WAVETRACE
   contextp->traceEverOn(true);
+  #endif
   top->trace(tfp, 10);
+  #if CONFIG_WAVETRACE
   tfp->open("dump.vcd");
+  #endif
 }
 
 void sim_exit(){

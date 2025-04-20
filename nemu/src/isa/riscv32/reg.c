@@ -29,6 +29,13 @@ void isa_reg_display() {
   }
 }
 
+void log_reg_write() {
+  for (int i = 0; i < sizeof(regs) / sizeof(regs[0]); i++) {
+    if(cpu.gpr[i]!=0)log_write("%s\t0x%08x\n", regs[i], cpu.gpr[i]);
+  }
+}
+
+
 void isa_reg_display_one(char *reg) {
   for (int i = 0; i < sizeof(regs) / sizeof(regs[0]); i++) {
     if(strcmp(regs[i], reg) == 0) {

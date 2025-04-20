@@ -43,7 +43,15 @@ void print_regs(bool all){
       printf("reg %3s | cpu = 0x%08x\n",regs[i],cpu.reg[i]);
     }
   }
-  
+}
+
+void log_regs(bool all){
+  //printf("cpu      pc = 0x%08x\n",cpu.pc);
+  for (int i = 0; i < ARRLEN(regs); i++) {
+    if( cpu.reg[i]!=0){
+      log_write("reg %3s | cpu = 0x%08x\n",regs[i],cpu.reg[i]);
+    }
+  }
 }
 
 void print_one_regs(char *reg) {

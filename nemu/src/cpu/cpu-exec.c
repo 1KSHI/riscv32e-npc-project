@@ -75,6 +75,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   log_write("------------------------------------\n");
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+  log_reg_write();
 #endif
 
 #ifdef CONFIG_IRINGBUF_COND

@@ -67,8 +67,8 @@ always@(*)begin
         `EXU_AND    : begin rd = src1 & src2   ; end
         `EXU_OR     : begin rd = src1 | src2   ; end
         `EXU_XOR    : begin rd = src1 ^ src2   ; end
-        `EXU_SLL    : begin rd = src1 << src2  ; end
-        `EXU_SRL    : begin rd = src1 >> src2  ; end
+        `EXU_SLL    : begin rd = src1 << src2[4:0]  ; end
+        `EXU_SRL    : begin rd = src1 >> src2[4:0]  ; end
         `EXU_SRA    : begin rd = sra_result    ; end
         `EXU_SLT    : begin rd = slt_result    ; end
         `EXU_SLTU   : begin rd = sltu_result   ; end

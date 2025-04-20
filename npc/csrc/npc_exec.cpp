@@ -29,6 +29,47 @@ static bool g_print_step = false;
   bool diff_skip_r;
 #endif
 
+#if CONFIG_IRINGBUF
+typedef struct {
+    char buffer[RINGBUF_SIZE][133];
+    int head;
+    int tail;
+    int count;
+} RingBuffer;
+
+RingBuffer ringbuf = { .head = 0, .tail = 0, .count = 0 };
+
+void ringbuf_write(const char *logbuf) {
+    if (ringbuf.count == RINGBUF_SIZE) {
+        // 缓冲区已满，覆盖最旧的数据
+        ringbuf.count = 0;
+        ringbuf.tail = (ringbuf.tail + 1) % RINGBUF_SIZE;
+    } else {
+        ringbuf.count++;
+    }
+
+    strncpy(ringbuf.buffer[ringbuf.head], logbuf, 133);
+    ringbuf.head = (ringbuf.head + 1) % RINGBUF_SIZE;
+}
+
+void iring_check(const char *logbuf){
+  
+  char formatted_logbuf[133];
+  if(npc_state.state != NPC_RUNNING){
+    snprintf(formatted_logbuf, sizeof(formatted_logbuf), "---> %s", logbuf);
+    ringbuf_write(formatted_logbuf);
+    for(int i=0; i<RINGBUF_SIZE; i++){
+      log_write("------------------------------------\n");
+      log_write("%s\n", ringbuf.buffer[(ringbuf.tail + i) % RINGBUF_SIZE]);
+    }
+    log_regs(false);
+  } else {
+    snprintf(formatted_logbuf, sizeof(formatted_logbuf), "     %s", logbuf);
+    ringbuf_write(formatted_logbuf);
+  }
+}
+#endif
+
 static void split_asm_buf(const char *asm_buf, char *first_part, char *second_part) {
   int i = 0, j = 0;
   while (asm_buf[i] != '\0' && asm_buf[i] != 0 && asm_buf[i] != 9 && asm_buf[i] != 32) {
@@ -42,13 +83,16 @@ static void split_asm_buf(const char *asm_buf, char *first_part, char *second_pa
 }
 
 static void trace_and_difftest(vaddr_t pc) {
-  #ifdef CONFIG_ITRACE
+  #if CONFIG_ITRACE_COND
+    #if CONFIG_REG
+      log_regs(false);
+    #endif
     log_write("---------------------------------------\n");
     log_write("%s\n", logbuf);
   #endif
   
-  #ifdef CONFIG_IRINGBUF
-    iring_check(cpu);
+  #if CONFIG_IRINGBUF
+    iring_check(logbuf);
   #endif
   
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(logbuf)); }
